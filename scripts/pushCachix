@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+eval $(nix-store -qR --include-outputs $(nix-store -qd $(nix-build -A decorated-cospans.components.library)) \
+  | grep '\.drv$' \
+  | cachix push o1lo01ol1o)
+
+eval $(nix-build shell-hoogle.nix \
+  | cachix push o1lo01ol1o)
