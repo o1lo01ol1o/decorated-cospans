@@ -1,28 +1,28 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 
 -- | A stochastic petri net is a petri net with rate constants for every transition.  See: https://math.ucr.edu/home/baez/structured_vs_decorated/structured_vs_decorated_companions_web.pdf
-module Petri.Stochastic (toStocastic, appInitial, thread) where
+module Petri.Stochastic (toStocastic, runPetriMorphism, foldMapNeighbors, foldNeighborsEndo) where
 
 import Algebra.Graph.AdjacencyMap
   ( AdjacencyMap (..),
     edges,
   )
-import Control.Monad.State (State, forM, gets, modify, runState)
 import Data.Bifunctor (Bifunctor (bimap))
-import Data.Finitary (Finitary, inhabitants)
-import Data.Function ((&))
 import qualified Data.Map as Map
 import qualified Data.Map.Monoidal.Strict as MMap
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Endo (..), Sum (Sum))
+import Data.Monoid (Endo (..), Sum (..))
 import qualified Data.Set as Set
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
 
+-- | Nodes in the graph will either be Places or Transitions
 data PetriNode p t = Place p | Transition t
   deriving stock (Eq, Ord, Show, Generic, Functor, Foldable, Traversable)
 
@@ -30,115 +30,105 @@ instance Bifunctor PetriNode where
   bimap f _ (Place p) = Place $ f p
   bimap _ f (Transition p) = Transition $ f p
 
+-- | A stochastic petri net is defined by graph of nodes an a rate function.
+-- TODO:  It may in some cases also be defined by multiple edges between two nodes. Dunno what semanticcs are required here.
 data Stochastic p t r = Stochastic
   { net :: AdjacencyMap (PetriNode p t),
     rate :: t -> r
   }
 
--- | State used to thread' the dynamics
-data PropagationState p t r = PropagationState
-  { -- | The transitions seen during the traveral of the net
-    computedTransitions :: Set.Set (PetriNode p t, PetriNode p t),
-    -- | The composed morphism: given a `MonnoidalMap` of initial values, return a `MonnoidalMap` of final values.
-    placeMorphism :: Endo (MMap.MonoidalMap p (Sum r)),
-    -- |
-    petriNet :: Stochastic p t r
+-- | Our basic algorithm needs to move over the graph and propagate values from source nodes to target nodes.
+-- it also needs to remove values from the source nodes but only at the end of the walk over the graph.
+-- Now, we could update values as we walk over graph but this would mean we would need to walk the whole
+-- structure each time we want to simulate initial values.  Instead, we walk the struccture once and return
+-- a function that can be called with initial values.  This is the @Endo@ type, which is a mondoid that
+-- composes functions for it's `mappend` and does `id` for mempty.
+-- >>> let k = (MMap.fromList $ [(S, 1), (I, 1), (R, 0)])
+-- >>> let j = (MMap.fromList $ [(S, 0), (I, -1), (R, -1)])
+-- >>> let a = (PetriMorphism . Endo $ \(a, b) -> (a <> k, b))
+-- >>> let b = (PetriMorphism . Endo $ \(a, b) -> (a , b <> j))
+-- >>> runPetriMorphism (mconcat [mempty, a, mempty, b, mempty]) (MMap.fromList $ [(S, -2), (I, 0), (R, 2)])
+-- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1}),(I,Sum {getSum = 0}),(R,Sum {getSum = 1})]}
+newtype PetriMorphism p b = PetriMorphism
+  { unPetriMorphism ::
+      Endo
+        ( MMap.MonoidalMap p (Sum b),
+          MMap.MonoidalMap p (Sum b)
+        )
   }
+  deriving stock (Generic)
+  deriving newtype (Monoid, Semigroup)
 
--- | Endo needs to alway be a function of the values of each place so that the net can be provided with initial values.
--- >>> let mm =  MMap.fromList [(S, 1), (I, 0), (R, 0)]
--- >>> let sEndo = fromMaybe mempty . MMap.lookup S
--- >>> let rateFn = (0.3 *)
--- >>> let go = reduceSource @Double sEndo rateFn
--- >>> go mm
--- Sum {getSum = -0.3}
-reduceSource ::
-  Num a =>
-  (MMap.MonoidalMap p (Sum a) -> Sum a) ->
-  (a -> a) ->
-  (MMap.MonoidalMap p (Sum a) -> Sum a)
-reduceSource smFn rateFun = kont
+-- | Run a PetriMorphism with some initial values.  Note that we only combine the updates after the whole graph is composed.
+runPetriMorphism :: (Ord p, Num b) => PetriMorphism p b -> MMap.MonoidalMap p (Sum b) -> MMap.MonoidalMap p (Sum b)
+runPetriMorphism (PetriMorphism endo) initialValues = forward <> backward
   where
-    kont initialState = amt initialState
-    amt initialState = fmap (negate . rateFun) . smFn $ initialState
+    (backward, forward) = appEndo endo (mempty, initialValues)
 
--- >>> let mm =  MMap.fromList [(S, 1), (I, 0), (R, 0)]
--- >>> let sEndo = fromMaybe mempty . MMap.lookup S
--- >>> let tEndo = fromMaybe mempty . MMap.lookup I
--- >>> let rateFn = (0.3 *)
--- >>> let go = increaseTarget @Double sEndo rateFn tEndo
--- >>> go mm
--- Sum {getSum = 0.3}
-increaseTarget ::
-  Num a =>
-  (MMap.MonoidalMap p (Sum a) -> Sum a) ->
-  (a -> a) ->
-  (MMap.MonoidalMap p (Sum a) -> Sum a) ->
-  (MMap.MonoidalMap p (Sum a) -> Sum a)
-increaseTarget sm rateFun tmFn = kont
-  where
-    kont initialState = (tmFn initialState <>) . amt $ initialState
-    amt = fmap rateFun . sm
+for :: [a] -> (a -> b) -> [b]
+for = flip fmap
 
-computeUpdates ::
-  (Ord p, Num r) =>
-  (t -> r) ->
-  Endo (MMap.MonoidalMap p (Sum r)) ->
-  PetriNode p t ->
-  PetriNode p t ->
-  PetriNode p t ->
-  ( Endo (MMap.MonoidalMap p (Sum r)),
-    Endo (MMap.MonoidalMap p (Sum r))
-  )
-computeUpdates rateFn (Endo initialValues) (Place source) (Transition t') (Place target) =
-  let sEndo = fromMaybe mempty . MMap.lookup source . initialValues
-      tEndo = fromMaybe mempty . MMap.lookup target . initialValues
-      targetUpdate = MMap.singleton target . increaseTarget sEndo (rateFn t' *) tEndo
-      sourceUpdate = MMap.singleton source . reduceSource sEndo (rateFn t' *)
-   in (Endo sourceUpdate, Endo targetUpdate)
-computeUpdates _ _ _ _ _ = (mempty, mempty)
-
-mappEndo :: (Ord k, Semigroup v) => Endo (MMap.MonoidalMap k v) -> Endo (MMap.MonoidalMap k v)
-mappEndo endo = Endo (\v -> appEndo endo v <> v)
-
--- | This is too difficult to reason about.  Do it all in ContT and skip all the Endo / State buisness
-thread' :: (Ord t, Ord p, Num r) => PetriNode p t -> State (PropagationState p t r) (Endo (MMap.MonoidalMap p (Sum r)))
-thread' s = do
-  net' <- gets (adjacencyMap . net . petriNet)
-  case Map.lookup s net' of
-    Just transitions -> fmap mconcat <$> forM (Set.toList transitions) $
-      \t ->
-        case Map.lookup t net' of
-          Just targets -> fmap mconcat <$> forM (Set.toList targets) $ \target -> do
-            haveSeen <- gets computedTransitions
-            if Set.member (s, target) haveSeen
-              then pure mempty
-              else do
-                initialValues <- gets placeMorphism
-                rateFn <- gets (rate . petriNet)
-                let (sourceUpdate, targetUpdates) = computeUpdates rateFn initialValues s t target
-                modify
-                  ( \st ->
-                      st
-                        { placeMorphism = mappEndo targetUpdates <> initialValues,
-                          computedTransitions = Set.singleton (s, target) <> haveSeen
-                        }
-                  )
-                (mappEndo sourceUpdate <>) <$> thread' target
-          Nothing -> pure mempty
-    Nothing -> pure mempty
-
-thread ::
-  (Ord p, Ord t, Num r) =>
-  p ->
-  Stochastic p t r ->
-  Endo (MMap.MonoidalMap p (Sum r))
-thread start pn =
-  let (updates, st') = flip runState (PropagationState mempty mempty pn) $ thread' (Place start)
-   in Endo (\v -> appEndo updates v <> appEndo (placeMorphism st') v)
-
+-- | Debug prints
 debug :: c -> String -> c
 debug = flip trace
+
+-- | This is like @foldMap@ except will walk our graph and bail once everything has been seen.
+foldMapNeighbors ::
+  (Ord p, Ord t, Show p, Show t) =>
+  AdjacencyMap (PetriNode p t) ->
+  Set.Set (PetriNode p t, PetriNode p t) ->
+  PetriNode p t ->
+  (PetriMorphism p b -> (PetriNode p t, PetriNode p t, PetriNode p t) -> PetriMorphism p b) ->
+  PetriMorphism p b
+foldMapNeighbors net' seen start f =
+  case Map.lookup start (adjacencyMap net') of
+    Nothing -> mempty
+    Just transitions -> foldMap (<> mempty) $
+      for (Set.toList transitions) $
+        \transition -> case Map.lookup transition (adjacencyMap net') of
+          Nothing -> mempty
+          Just targets -> foldMap (<> mempty) $
+            for (Set.toList targets) $ \target ->
+              if Set.member (start, target) seen
+                then mempty
+                else
+                  let recurse =
+                        foldMapNeighbors
+                          net'
+                          (Set.singleton (start, target) <> seen)
+                          target
+                          f
+                   in f recurse (start, transition, target)
+
+-- | compute the updates given a source, target, and rate function.
+computeUpdates ::
+  (Ord p, Num b) =>
+  (t -> b) ->
+  PetriNode p t ->
+  PetriNode p t ->
+  PetriNode p t ->
+  PetriMorphism p b
+computeUpdates rateFn (Place source) (Transition t') (Place target) = PetriMorphism . Endo $ \(sourceUpdate, initialValues) ->
+  let source' = fromMaybe mempty . MMap.lookup source $ initialValues
+      target' = fromMaybe mempty . MMap.lookup target $ initialValues
+      targetUpdate = MMap.singleton target (fmap (rateFn t' *) source' <> target')
+      sourceUpdate' = MMap.singleton source (fmap (negate . (rateFn t' *)) source')
+   in (sourceUpdate' <> sourceUpdate, targetUpdate <> initialValues)
+computeUpdates _ _ _ _ = mempty
+
+-- | The fold that applies the above Endos
+foldNeighborsEndo ::
+  (Ord p, Ord t, Num r, Show p, Show t) =>
+  Stochastic p t r ->
+  p ->
+  PetriMorphism p r
+foldNeighborsEndo stochasticNet start = foldMapNeighbors net' seen (Place start) f
+  where
+    seen = mempty
+    net' = net stochasticNet
+    f acc (source, transition, target) =
+      let !acc' = computeUpdates (rate stochasticNet) source transition target
+       in acc <> acc' -- N.B the order of mappending matters!
 
 toStocastic ::
   (Ord p, Ord t) =>
@@ -178,18 +168,25 @@ sirEdges =
     (r_2, r)
   ]
 
-appInitial :: forall b p. MMap.MonoidalMap p (Sum b) -> Endo (MMap.MonoidalMap p (Sum b)) -> MMap.MonoidalMap p (Sum b)
-appInitial initial (Endo go) = go initial
-
 -- | Define a SIR model given two rates
 -- >>> let r_1 = 0.02
 -- >>> let r_2 = 0.05
 -- >>> let net = sirNet r_1 r_2
--- >>> let endos = thread S net
--- >>> appInitial @Double (MMap.fromList $ [(S, 1), (I, 0), (R, 0)]) endos
--- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 1.98}),(I,Sum {getSum = 7.69024e-2}),(R,Sum {getSum = 2.8744800000000004e-2})]}
+-- >>> let kont = foldNeighborsEndo net S
+-- >>> runPetriMorphism kont (MMap.fromList $ [(S, 1), (I, 0), (R, 0)])
+-- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.98}),(I,Sum {getSum = 3.6980000000000006e-2}),(R,Sum {getSum = 4.020000000000001e-3})]}
 sirNet :: r -> r -> Stochastic SIR R r
 sirNet r1 r2 = toStocastic rateFn sirEdges
   where
     rateFn R_1 = r1
     rateFn R_2 = r2
+
+-- >>> test
+-- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.98}),(I,Sum {getSum = 3.6980000000000006e-2}),(R,Sum {getSum = 4.020000000000001e-3})]}
+test :: MMap.MonoidalMap SIR (Sum Double)
+test =
+  let r_1 = 0.02
+      r_2 = 0.05
+      net = sirNet r_1 r_2
+      kont = foldNeighborsEndo net S
+   in runPetriMorphism kont (MMap.fromList [(S, 1), (I, 0), (R, 0)])
