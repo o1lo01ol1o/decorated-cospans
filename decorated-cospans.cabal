@@ -23,7 +23,7 @@ source-repository head
 common common-options
   build-depends:
     , algebraic-graphs
-    , base                 ^>=4.13.0.0
+    , base                 ^>= 4.14.0.0
     , bifunctors
     , containers
     , finitary
