@@ -18,4 +18,4 @@ jobs:
           name: decorated-cospans
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
 
-      - run: nix-build -A decorated-cospans.components
+      - run: ./scripts/pushCachix

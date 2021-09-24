@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-eval nix-store -qR --include-outputs $(nix-store -qd $(nix-build -A decorated-cospans.components)) | grep '\.drv$' | cachix push o1lo01ol1o
-eval nix-store -qR --include-outputs $(nix-store -qd $(nix-build -A decorated-cospans.components)) | cachix push o1lo01ol1o
-eval nix-store --query --references $(nix-instantiate shell.nix) | xargs nix-store --realise | xargs nix-store --query --requisites | cachix push o1lo01ol1o
-eval nix-store --query --references $(nix-instantiate shell-hoogle.nix) | xargs nix-store --realise | xargs nix-store --query --requisites | cachix push o1lo01ol1o
+eval nix-store -qR --include-outputs $(nix-store -qd $(nix-build -A decorated-cospans.components)) | grep '\.drv$' | cachix push decorated-cospans
+eval nix-store -qR --include-outputs $(nix-store -qd $(nix-build -A decorated-cospans.components)) | cachix push decorated-cospans
+eval nix-store --query --references $(nix-instantiate shell.nix) | xargs nix-store --realise | xargs nix-store --query --requisites | cachix push decorated-cospans
+eval nix-store --query --references $(nix-instantiate shell-hoogle.nix) | xargs nix-store --realise | xargs nix-store --query --requisites | cachix push decorated-cospans
 
