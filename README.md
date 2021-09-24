@@ -22,7 +22,7 @@ We're using Haskell.nix. [Make sure you add the IOHK binary cache to your subsit
 Build arefacts are cached by [cachix](https://www.cachix.org/). You should download the client and then tell it to use these caches:
 
 ```bash
-cachix use o1lo01ol1o
+cachix use decorated-cospans
 cachix use iohk
 ```
 
