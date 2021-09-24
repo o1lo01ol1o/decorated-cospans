@@ -13,15 +13,20 @@ If you're one windows, you'll need to install a WSL container for ubuntu or simi
 
 Pay attention to the end of the installation, you will likely need to add a configuration line to your shell environment.
 
+### Haskell.nix
+
+We're using Haskell.nix. [Make sure you add the IOHK binary cache to your subsituters.](https://input-output-hk.github.io/haskell.nix/tutorials/getting-started/)
+
 ### Cachix
 
-Build arefacts are cached by [cachix](https://www.cachix.org/). You should download the client and then tell it to use this cache:
+Build arefacts are cached by [cachix](https://www.cachix.org/). You should download the client and then tell it to use these caches:
 
 ```bash
 cachix use o1lo01ol1o
+cachix use iohk
 ```
 
-So long as there have been build artefacts already built for your system and pushed to the cache, you should see nix download them from `o1lo01ol1o.cachix.org` during build or shell instantiation.
+So long as there have been build artefacts already built for your system and pushed to the cache, you should see nix download them from `foo.cachix.org` during build or shell instantiation.
 
 ### VSCode
 
