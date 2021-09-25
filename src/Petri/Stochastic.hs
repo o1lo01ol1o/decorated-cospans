@@ -4,10 +4,17 @@
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeApplications #-}
 
 -- | A stochastic petri net is a petri net with rate constants for every transition.  See: https://math.ucr.edu/home/baez/structured_vs_decorated/structured_vs_decorated_companions_web.pdf
-module Petri.Stochastic (toStocastic, runPetriMorphism, foldMapNeighbors, foldNeighborsEndo) where
+module Petri.Stochastic
+  ( toStocastic,
+    runPetriMorphism,
+    foldMapNeighbors,
+    foldNeighborsEndo,
+    sirNet,
+    SIR (..),
+  )
+where
 
 import Algebra.Graph.AdjacencyMap
   ( AdjacencyMap (..),
@@ -34,7 +41,7 @@ instance Bifunctor PetriNode where
 -- TODO:  It may in some cases also be defined by multiple edges between two nodes. Dunno what semanticcs are required here.
 data Stochastic p t r = Stochastic
   { net :: AdjacencyMap (PetriNode p t),
-    rate :: t -> r
+    rate :: r -> t -> r -> r
   }
 
 -- | Our basic algorithm needs to move over the graph and propagate values from source nodes to target nodes.
@@ -103,7 +110,7 @@ foldMapNeighbors net' seen start f =
 -- | compute the updates given a source, target, and rate function.
 computeUpdates ::
   (Ord p, Num b) =>
-  (t -> b) ->
+  (b -> t -> b -> b) ->
   PetriNode p t ->
   PetriNode p t ->
   PetriNode p t ->
@@ -111,8 +118,9 @@ computeUpdates ::
 computeUpdates rateFn (Place source) (Transition t') (Place target) = PetriMorphism . Endo $ \(sourceUpdate, initialValues) ->
   let source' = fromMaybe mempty . MMap.lookup source $ initialValues
       target' = fromMaybe mempty . MMap.lookup target $ initialValues
-      targetUpdate = MMap.singleton target (fmap (rateFn t' *) source' <> target')
-      sourceUpdate' = MMap.singleton source (fmap (negate . (rateFn t' *)) source')
+      rateConst = rateFn (getSum source') t' (getSum target')
+      targetUpdate = MMap.singleton target (fmap (rateConst *) source' <> target')
+      sourceUpdate' = MMap.singleton source (fmap (negate . (rateConst *)) source')
    in (sourceUpdate' <> sourceUpdate, targetUpdate <> initialValues)
 computeUpdates _ _ _ _ = mempty
 
@@ -132,7 +140,7 @@ foldNeighborsEndo stochasticNet start = foldMapNeighbors net' seen (Place start)
 
 toStocastic ::
   (Ord p, Ord t) =>
-  (t -> r) ->
+  (r -> t -> r -> r) ->
   [(PetriNode p t, PetriNode p t)] ->
   Stochastic p t r
 toStocastic rateFn netEdges = Stochastic (edges netEdges) rateFn
@@ -173,20 +181,30 @@ sirEdges =
 -- >>> let r_2 = 0.05
 -- >>> let net = sirNet r_1 r_2
 -- >>> let kont = foldNeighborsEndo net S
--- >>> runPetriMorphism kont (MMap.fromList $ [(S, 1), (I, 0), (R, 0)])
--- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.98}),(I,Sum {getSum = 3.6980000000000006e-2}),(R,Sum {getSum = 4.020000000000001e-3})]}
-sirNet :: r -> r -> Stochastic SIR R r
+-- >>> let t1 = runPetriMorphism kont (MMap.fromList $ [(S, Sum 0.99), (I, Sum 0.01), (R, 0)])
+-- >>> let t2 = runPetriMorphism kont t1
+-- >>> let t3 = runPetriMorphism kont t2
+-- >>> show t1
+-- >>> show t2
+-- >>> show t3
+-- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.98980398}),(I,Sum {getSum = 4.02900695285767e-2}),(R,Sum {getSum = 1.2236443261532212e-4})]}"
+-- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.9890145267734523}),(I,Sum {getSum = 0.16108375657337065}),(R,Sum {getSum = 2.4759362519137535e-3})]}"
+-- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.9858632461000288}),(I,Sum {getSum = 0.6241346826119188}),(R,Sum {getSum = 4.169826591669607e-2})]}"
+sirNet :: (Num r, Eq r) => r -> r -> Stochastic SIR R r
 sirNet r1 r2 = toStocastic rateFn sirEdges
   where
-    rateFn R_1 = r1
-    rateFn R_2 = r2
+    rateFn source R_1 target
+      | target == 0 = 0
+      | source == 0 = 0
+      | otherwise = r1 * target * source
+    rateFn source R_2 _ = source * r2
 
 -- >>> test
--- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.98}),(I,Sum {getSum = 3.6980000000000006e-2}),(R,Sum {getSum = 4.020000000000001e-3})]}
+-- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = 0.98980398}),(I,Sum {getSum = 4.02900695285767e-2}),(R,Sum {getSum = 1.2236443261532212e-4})]}
 test :: MMap.MonoidalMap SIR (Sum Double)
 test =
   let r_1 = 0.02
       r_2 = 0.05
       net = sirNet r_1 r_2
       kont = foldNeighborsEndo net S
-   in runPetriMorphism kont (MMap.fromList [(S, 1), (I, 0), (R, 0)])
+   in runPetriMorphism kont (MMap.fromList [(S, Sum 0.99), (I, Sum 0.01), (R, Sum 0)])
