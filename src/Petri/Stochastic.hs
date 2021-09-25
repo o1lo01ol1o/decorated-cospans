@@ -68,7 +68,7 @@ newtype PetriMorphism p b = PetriMorphism
 
 -- | Run a PetriMorphism with some initial values.  Note that we only combine the updates after the whole graph is composed.
 runPetriMorphism :: (Ord p, Num b) => PetriMorphism p b -> MMap.MonoidalMap p (Sum b) -> MMap.MonoidalMap p (Sum b)
-runPetriMorphism (PetriMorphism endo) initialValues = forward <> backward
+runPetriMorphism (PetriMorphism endo) initialValues = forward -- <> backward
   where
     (backward, forward) = appEndo endo (mempty, initialValues)
 

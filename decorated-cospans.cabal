@@ -74,3 +74,24 @@ benchmark decorated-cospans-benchmark
     , gauge
 
   ghc-options:    -threaded -rtsopts -with-rtsopts=-N
+
+executable example-sir
+  import:         common-options
+  hs-source-dirs: example-sir
+  main-is:        Main.hs
+  build-depends:
+    , base
+    , blaze-html
+    , containers
+    , decorated-cospans
+    , here
+    , hmatrix
+    , hmatrix-gsl
+    , hvega
+    , knit-haskell       >=0.8.0.0
+    , plots
+    , polysemy
+    , polysemy-plugin
+    , text
+
+  ghc-options:    -threaded -rtsopts -with-rtsopts=-N

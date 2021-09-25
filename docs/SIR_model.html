@@ -1,0 +1,3098 @@
+<!doctype html>
+<html  lang="English" >
+<head>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!--[if lt IE 9]>
+                <script src="http://css3-mediaqueries-js.googlecode.com/svn/trunk/css3-mediaqueries.js"></script>
+        <![endif]-->
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <link href="https://vjs.zencdn.net/5.4.4/video-js.css" rel="stylesheet" />
+
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script type='text/javascript' src='menu/js/jquery.cookie.js'></script>
+<script type='text/javascript' src='menu/js/jquery.hoverIntent.minified.js'></script>
+<script type='text/javascript' src='menu/js/jquery.dcjqaccordion.2.7.min.js'></script>
+
+<link href="menu/css/skins/blue.css" rel="stylesheet" type="text/css" />
+<link href="menu/css/skins/graphite.css" rel="stylesheet" type="text/css" />
+<link href="menu/css/skins/grey.css" rel="stylesheet" type="text/css" />
+
+<!-- MathJax -->
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+<!-- Vega and Vega Embed -->
+<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@4"></script>        
+  
+  <script src="script.js"></script>
+  
+    <script src="jquery.sticky-kit.js "></script>
+  <meta name="generator" content="pandoc" />
+  <title>SIR Model</title>
+  <style type="text/css">code{white-space: pre;}</style>
+</head>
+<body>
+
+    
+    <div class="container">
+    <div class="row">
+            <div class="span12">
+            <section id="some-example-markdown" class="level1">
+            <h1>Some example markdown</h1>
+            <ul>
+            <li><p><a href="https://pandoc.org/MANUAL.html#pandocs-markdown">Markdown</a> is a nice way to write formatted notes with a minimum of code.</p></li>
+            <li><p>It supports links and tables and some <em>styling</em> information.</p></li>
+            </ul>
+            <section id="example-hvega-visualization." class="level2">
+            <h2>Example HVega visualization.</h2>
+            <figure id="figure_1">
+            <script type="text/javascript">var vlSpec=
+            {
+                "height": 640,
+                "background": "rgba(0, 0, 0, 0.01)",
+                "width": 960,
+                "data": {
+                    "values": [
+                        {
+                            "Place": "S",
+                            "Population": 0.99,
+                            "Time": 0
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.0e-2,
+                            "Time": 0
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 0,
+                            "Time": 0
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 0.9949873950200353,
+                            "Time": 5.025125628140704e-3
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.0207081725476349e-2,
+                            "Time": 5.025125628140704e-3
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.171813891845404e-7,
+                            "Time": 5.025125628140704e-3
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 0.9999999154027835,
+                            "Time": 1.0050251256281407e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.0418493485228655e-2,
+                            "Time": 1.0050251256281407e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.0667178620304585e-6,
+                            "Time": 1.0050251256281407e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0050376877241123,
+                            "Time": 1.507537688442211e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.0634327109029717e-2,
+                            "Time": 1.507537688442211e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.6501965475828639e-6,
+                            "Time": 1.507537688442211e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0101008391975497,
+                            "Time": 2.0100502512562814e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.0854676414045392e-2,
+                            "Time": 2.0100502512562814e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.2692767441970677e-6,
+                            "Time": 2.0100502512562814e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0151894976774964,
+                            "Time": 2.512562814070352e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.1079637249084357e-2,
+                            "Time": 2.512562814070352e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.925693118698581e-6,
+                            "Time": 2.512562814070352e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0203037916624549,
+                            "Time": 3.015075376884422e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.1309307539871074e-2,
+                            "Time": 3.015075376884422e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.6212590467272543e-6,
+                            "Time": 3.015075376884422e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0254438502982735,
+                            "Time": 3.5175879396984924e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.1543787335367496e-2,
+                            "Time": 3.5175879396984924e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.357870100547108e-6,
+                            "Time": 3.5175879396984924e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0306098033814082,
+                            "Time": 4.020100502512563e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.1783178855169024e-2,
+                            "Time": 4.020100502512563e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.137507690875314e-6,
+                            "Time": 4.020100502512563e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0358017813622,
+                            "Time": 4.522613065326633e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.2027586538000975e-2,
+                            "Time": 4.522613065326633e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.962242869578864e-6,
+                            "Time": 4.522613065326633e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0410199153481692,
+                            "Time": 5.025125628140704e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.2277117091342424e-2,
+                            "Time": 5.025125628140704e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.83424030039606e-6,
+                            "Time": 5.025125628140704e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0462643371073257,
+                            "Time": 5.527638190954774e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.2531879542205042e-2,
+                            "Time": 5.527638190954774e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.755762405162749e-6,
+                            "Time": 5.527638190954774e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.051535179071497,
+                            "Time": 6.030150753768844e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.2791985289095257e-2,
+                            "Time": 6.030150753768844e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.729173693360788e-6,
+                            "Time": 6.030150753768844e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0568325743396718,
+                            "Time": 6.532663316582915e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.3057548155188791e-2,
+                            "Time": 6.532663316582915e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.756945283159385e-6,
+                            "Time": 6.532663316582915e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0621566566813614,
+                            "Time": 7.035175879396985e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.332868444274741e-2,
+                            "Time": 7.035175879396985e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.0841659622489256e-5,
+                            "Time": 7.035175879396985e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0675075605399775,
+                            "Time": 7.537688442211056e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.36055129888085e-2,
+                            "Time": 7.537688442211056e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.198601541907603e-5,
+                            "Time": 7.537688442211056e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.072885421036227,
+                            "Time": 8.040201005025126e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.3888155222178889e-2,
+                            "Time": 8.040201005025126e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.3192832788763407e-5,
+                            "Time": 8.040201005025126e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0782903739715246,
+                            "Time": 8.542713567839195e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.4176735221765173e-2,
+                            "Time": 8.542713567839195e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.4465058631879574e-5,
+                            "Time": 8.542713567839195e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0837225558314212,
+                            "Time": 9.045226130653267e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.4471379776273646e-2,
+                            "Time": 9.045226130653267e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.580577224784268e-5,
+                            "Time": 9.045226130653267e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.089182103789051,
+                            "Time": 9.547738693467336e-2
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.4772218445313815e-2,
+                            "Time": 9.547738693467336e-2
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.721819119866411e-5,
+                            "Time": 9.547738693467336e-2
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.0946691557085955,
+                            "Time": 0.10050251256281408
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.5079383621940426e-2,
+                            "Time": 0.10050251256281408
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.8705677432492634e-5,
+                            "Time": 0.10050251256281408
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1001838501487644,
+                            "Time": 0.10552763819095477
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.539301059666976e-2,
+                            "Time": 0.10552763819095477
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.02717436788492e-5,
+                            "Time": 0.10552763819095477
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1057263263662949,
+                            "Time": 0.11055276381909548
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.5713237623007057e-2,
+                            "Time": 0.11055276381909548
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.1920060127732556e-5,
+                            "Time": 0.11055276381909548
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1112967243194678,
+                            "Time": 0.11557788944723618
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.604020598452275e-2,
+                            "Time": 0.11557788944723618
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.3654461405330658e-5,
+                            "Time": 0.11557788944723618
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.116895184671642,
+                            "Time": 0.12060301507537688
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.6374060063516393e-2,
+                            "Time": 0.12060301507537688
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.5478953859653836e-5,
+                            "Time": 0.12060301507537688
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1225218487948063,
+                            "Time": 0.12562814070351758
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.671494741130801e-2,
+                            "Time": 0.12562814070351758
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.739772317001322e-5,
+                            "Time": 0.12562814070351758
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1281768587731498,
+                            "Time": 0.1306532663316583
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.706301882019784e-2,
+                            "Time": 0.1306532663316583
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.9415142294904303e-5,
+                            "Time": 0.1306532663316583
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.133860357406649,
+                            "Time": 0.135678391959799
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.7418428397136452e-2,
+                            "Time": 0.135678391959799
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.153577977352119e-5,
+                            "Time": 0.135678391959799
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1395724882146745,
+                            "Time": 0.1407035175879397
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.7781333639148432e-2,
+                            "Time": 0.1407035175879397
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.376440839682436e-5,
+                            "Time": 0.1407035175879397
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1453133954396149,
+                            "Time": 0.1457286432160804
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.8151895510553906e-2,
+                            "Time": 0.1457286432160804
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.610601426481393e-5,
+                            "Time": 0.1457286432160804
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.151083224050519,
+                            "Time": 0.15075376884422112
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.8530278522033497e-2,
+                            "Time": 0.15075376884422112
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.856580624742458e-5,
+                            "Time": 0.15075376884422112
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1568821197467571,
+                            "Time": 0.15577889447236182
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.8916650811583488e-2,
+                            "Time": 0.15577889447236182
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.1149225867257686e-5,
+                            "Time": 0.15577889447236182
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1627102289616993,
+                            "Time": 0.16080402010050251
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.9311184227409257e-2,
+                            "Time": 0.16080402010050251
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.386195762320364e-5,
+                            "Time": 0.16080402010050251
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.168567698866414,
+                            "Time": 0.1658291457286432
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 1.9714054412806402e-2,
+                            "Time": 0.1658291457286432
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.6709939774883445e-5,
+                            "Time": 0.1658291457286432
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1744546773733842,
+                            "Time": 0.1708542713567839
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.0125440893080302e-2,
+                            "Time": 0.1708542713567839
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.969937560875695e-5,
+                            "Time": 0.1708542713567839
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1803713131402418,
+                            "Time": 0.17587939698492464
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.0545527164556307e-2,
+                            "Time": 0.17587939698492464
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.283674520770604e-5,
+                            "Time": 0.17587939698492464
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1863177555735227,
+                            "Time": 0.18090452261306533
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.0974500785734155e-2,
+                            "Time": 0.18090452261306533
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.612881774690739e-5,
+                            "Time": 0.18090452261306533
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1922941548324386,
+                            "Time": 0.18592964824120603
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.141255347064178e-2,
+                            "Time": 0.18592964824120603
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.958266433986386e-5,
+                            "Time": 0.18592964824120603
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.1983006618326693,
+                            "Time": 0.19095477386934673
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.185988118444512e-2,
+                            "Time": 0.19095477386934673
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.320567145956718e-5,
+                            "Time": 0.19095477386934673
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2043374282501735,
+                            "Time": 0.19597989949748745
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.2316684241372203e-2,
+                            "Time": 0.19597989949748745
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.700555496092108e-5,
+                            "Time": 0.19597989949748745
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.210404606525019,
+                            "Time": 0.20100502512562815
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.27831674050114e-2,
+                            "Time": 0.20100502512562815
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.09903747317652e-5,
+                            "Time": 0.20100502512562815
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2165023498652316,
+                            "Time": 0.20603015075376885
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.325953999104545e-2,
+                            "Time": 0.20603015075376885
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.516855000110912e-5,
+                            "Time": 0.20603015075376885
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.222630812250665,
+                            "Time": 0.21105527638190955
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.3746015972484547e-2,
+                            "Time": 0.21105527638190955
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.954887533451423e-5,
+                            "Time": 0.21105527638190955
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.228790148436888,
+                            "Time": 0.21608040201005024
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.424281408746363e-2,
+                            "Time": 0.21608040201005024
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.414053734795483e-5,
+                            "Time": 0.21608040201005024
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2349805139590926,
+                            "Time": 0.22110552763819097
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.4750157949670927e-2,
+                            "Time": 0.22110552763819097
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.8953132172948e-5,
+                            "Time": 0.22110552763819097
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.241202065136022,
+                            "Time": 0.22613065326633167
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.526827616147654e-2,
+                            "Time": 0.22613065326633167
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.399668370727077e-5,
+                            "Time": 0.22613065326633167
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.247454959073918,
+                            "Time": 0.23115577889447236
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.5797402429832115e-2,
+                            "Time": 0.23115577889447236
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.928166268718566e-5,
+                            "Time": 0.23115577889447236
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.253739353670487,
+                            "Time": 0.23618090452261306
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.6337775685014404e-2,
+                            "Time": 0.23618090452261306
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.0481900661877336e-4,
+                            "Time": 0.23618090452261306
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2600554076188895,
+                            "Time": 0.24120603015075376
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.6889640202287846e-2,
+                            "Time": 0.24120603015075376
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.1062014060773198e-4,
+                            "Time": 0.24120603015075376
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2664032804117449,
+                            "Time": 0.24623115577889448
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.7453245726563366e-2,
+                            "Time": 0.24623115577889448
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.1669699912884554e-4,
+                            "Time": 0.24623115577889448
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2727831323451608,
+                            "Time": 0.25125628140703515
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.8028847600132883e-2,
+                            "Time": 0.25125628140703515
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.2306204877825748e-4,
+                            "Time": 0.25125628140703515
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2791951245227802,
+                            "Time": 0.2562814070351759
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.8616706893561394e-2,
+                            "Time": 0.2562814070351759
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.2972831205371201e-4,
+                            "Time": 0.2562814070351759
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2856394188598492,
+                            "Time": 0.2613065326633166
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.9217090539820738e-2,
+                            "Time": 0.2613065326633166
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.3670939221004834e-4,
+                            "Time": 0.2613065326633166
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2921161780873063,
+                            "Time": 0.2663316582914573
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 2.983027147175191e-2,
+                            "Time": 0.2663316582914573
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.4401949923946228e-4,
+                            "Time": 0.2663316582914573
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.2986255657558918,
+                            "Time": 0.271356783919598
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.0456528762945113e-2,
+                            "Time": 0.271356783919598
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.5167347702838314e-4,
+                            "Time": 0.271356783919598
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.305167746240277,
+                            "Time": 0.2763819095477387
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.1096147772129473e-2,
+                            "Time": 0.2763819095477387
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.5968683174526194e-4,
+                            "Time": 0.2763819095477387
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3117428847432158,
+                            "Time": 0.2814070351758794
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.174942029116722e-2,
+                            "Time": 0.2814070351758794
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.6807576151613637e-4,
+                            "Time": 0.2814070351758794
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3183511472997158,
+                            "Time": 0.2864321608040201
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.2416644696749854e-2,
+                            "Time": 0.2864321608040201
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.7685718744752944e-4,
+                            "Time": 0.2864321608040201
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3249927007812312,
+                            "Time": 0.2914572864321608
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.309812610589664e-2,
+                            "Time": 0.2914572864321608
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.8604878605906185e-4,
+                            "Time": 0.2914572864321608
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.331667712899877,
+                            "Time": 0.2964824120603015
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.379417653535928e-2,
+                            "Time": 0.2964824120603015
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.956690231911246e-4,
+                            "Time": 0.2964824120603015
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3383763522126635,
+                            "Time": 0.30150753768844224
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.450511506503915e-2,
+                            "Time": 0.30150753768844224
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.0573718945606027e-4,
+                            "Time": 0.30150753768844224
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3451187881257527,
+                            "Time": 0.3065326633165829
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.523126800552729e-2,
+                            "Time": 0.3065326633165829
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.162734373045674e-4,
+                            "Time": 0.3065326633165829
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3518951908987369,
+                            "Time": 0.31155778894472363
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.597296906988045e-2,
+                            "Time": 0.31155778894472363
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.272988197824595e-4,
+                            "Time": 0.31155778894472363
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3587057316489368,
+                            "Time": 0.3165829145728643
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.6730559549749964e-2,
+                            "Time": 0.3165829145728643
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.3883533105649923e-4,
+                            "Time": 0.3165829145728643
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.365550582355724,
+                            "Time": 0.32160804020100503
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.7504388495984156e-2,
+                            "Time": 0.32160804020100503
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.5090594879179936e-4,
+                            "Time": 0.32160804020100503
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3724299158648625,
+                            "Time": 0.32663316582914576
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.8294812903828315e-2,
+                            "Time": 0.32663316582914576
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.635346784672278e-4,
+                            "Time": 0.32663316582914576
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3793439058928745,
+                            "Time": 0.3316582914572864
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.9102197902850654e-2,
+                            "Time": 0.3316582914572864
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.7674659971941115e-4,
+                            "Time": 0.3316582914572864
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.386292727031426,
+                            "Time": 0.33668341708542715
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 3.992691695172633e-2,
+                            "Time": 0.33668341708542715
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.9056791481028036e-4,
+                            "Time": 0.33668341708542715
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.3932765547517367,
+                            "Time": 0.3417085427135678
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.076935203801596e-2,
+                            "Time": 0.3417085427135678
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.050259993176756e-4,
+                            "Time": 0.3417085427135678
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4002955654090101,
+                            "Time": 0.34673366834170855
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.162989388307962e-2,
+                            "Time": 0.34673366834170855
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.20149455153332e-4,
+                            "Time": 0.34673366834170855
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4073499362468873,
+                            "Time": 0.35175879396984927
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.250894215227135e-2,
+                            "Time": 0.35175879396984927
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.3596816601760013e-4,
+                            "Time": 0.35175879396984927
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4144398454019222,
+                            "Time": 0.35678391959798994
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.340690567056453e-2,
+                            "Time": 0.35678391959798994
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.525133554055569e-4,
+                            "Time": 0.35678391959798994
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4215654719080808,
+                            "Time": 0.36180904522613067
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.432420264376281e-2,
+                            "Time": 0.36180904522613067
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.698176472847164e-4,
+                            "Time": 0.36180904522613067
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.428726995701261,
+                            "Time": 0.36683417085427134
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.52612608854566e-2,
+                            "Time": 0.36683417085427134
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.879151295703877e-4,
+                            "Time": 0.36683417085427134
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.435924597623837,
+                            "Time": 0.37185929648241206
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.621851804989062e-2,
+                            "Time": 0.37185929648241206
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.0684142053086785e-4,
+                            "Time": 0.37185929648241206
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4431584594292262,
+                            "Time": 0.3768844221105528
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.7196421870912844e-2,
+                            "Time": 0.3768844221105528
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.266337382610921e-4,
+                            "Time": 0.3768844221105528
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4504287637864777,
+                            "Time": 0.38190954773869346
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.819543040718169e-2,
+                            "Time": 0.38190954773869346
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.4733097337014313e-4,
+                            "Time": 0.38190954773869346
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4577356942848863,
+                            "Time": 0.3869346733668342
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 4.9216012293813616e-2,
+                            "Time": 0.3869346733668342
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.6897376503513157e-4,
+                            "Time": 0.3869346733668342
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4650794354386278,
+                            "Time": 0.3919597989949749
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.0258647000659636e-2,
+                            "Time": 0.3919597989949749
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.916045805814362e-4,
+                            "Time": 0.3919597989949749
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4724601726914184,
+                            "Time": 0.3969849246231156
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.1323825097405885e-2,
+                            "Time": 0.3969849246231156
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.152677987571586e-4,
+                            "Time": 0.3969849246231156
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4798780924211976,
+                            "Time": 0.4020100502512563
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.2412048525699834e-2,
+                            "Time": 0.4020100502512563
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.400097968779048e-4,
+                            "Time": 0.4020100502512563
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4873333819448347,
+                            "Time": 0.40703517587939697
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.352383087851065e-2,
+                            "Time": 0.40703517587939697
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.658790420266909e-4,
+                            "Time": 0.40703517587939697
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.4948262295228587,
+                            "Time": 0.4120603015075377
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.465969768693987e-2,
+                            "Time": 0.4120603015075377
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.92926186502916e-4,
+                            "Time": 0.4120603015075377
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5023568243642127,
+                            "Time": 0.4170854271356784
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.582018671470563e-2,
+                            "Time": 0.4170854271356784
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.212041677239372e-4,
+                            "Time": 0.4170854271356784
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.509925356631031,
+                            "Time": 0.4221105527638191
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.7005848260531886e-2,
+                            "Time": 0.4221105527638191
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.507683127928991e-4,
+                            "Time": 0.4221105527638191
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5175320174434417,
+                            "Time": 0.4271356783919598
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.821724546868239e-2,
+                            "Time": 0.4271356783919598
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.816764479570957e-4,
+                            "Time": 0.4271356783919598
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5251769988843926,
+                            "Time": 0.4321608040201005
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 5.9454954647887345e-2,
+                            "Time": 0.4321608040201005
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.139890131923175e-4,
+                            "Time": 0.4321608040201005
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.532860494004502,
+                            "Time": 0.4371859296482412
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 6.071956559892027e-2,
+                            "Time": 0.4371859296482412
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.477691821604268e-4,
+                            "Time": 0.4371859296482412
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5405826968269332,
+                            "Time": 0.44221105527638194
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 6.2011681951091364e-2,
+                            "Time": 0.44221105527638194
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.83082987799762e-4,
+                            "Time": 0.44221105527638194
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5483438023522937,
+                            "Time": 0.4472361809045226
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 6.333192150793401e-2,
+                            "Time": 0.4472361809045226
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.199994538210346e-4,
+                            "Time": 0.4472361809045226
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5561440065635608,
+                            "Time": 0.45226130653266333
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 6.468091660237098e-2,
+                            "Time": 0.45226130653266333
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.585907323950955e-4,
+                            "Time": 0.45226130653266333
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5639835064310281,
+                            "Time": 0.457286432160804
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 6.605931446165753e-2,
+                            "Time": 0.457286432160804
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.989322483333933e-4,
+                            "Time": 0.457286432160804
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.571862499917282,
+                            "Time": 0.4623115577889447
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 6.746777758241043e-2,
+                            "Time": 0.4623115577889447
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.41102850077192e-4,
+                            "Time": 0.4623115577889447
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5797811859821989,
+                            "Time": 0.46733668341708545
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 6.890698411604279e-2,
+                            "Time": 0.46733668341708545
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.851849678276167e-4,
+                            "Time": 0.46733668341708545
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5877397645879696,
+                            "Time": 0.4723618090452261
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 7.037762826493767e-2,
+                            "Time": 0.4723618090452261
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.0312647791655151e-3,
+                            "Time": 0.4723618090452261
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.5957384367041494,
+                            "Time": 0.47738693467336685
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 7.188042068970604e-2,
+                            "Time": 0.47738693467336685
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.0794323825279025e-3,
+                            "Time": 0.47738693467336685
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6037774043127322,
+                            "Time": 0.4824120603015075
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 7.34160889278879e-2,
+                            "Time": 0.4824120603015075
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.129781978926517e-3,
+                            "Time": 0.4824120603015075
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6118568704132519,
+                            "Time": 0.48743718592964824
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 7.49853778244702e-2,
+                            "Time": 0.48743718592964824
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.1824120623137998e-3,
+                            "Time": 0.48743718592964824
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6199770390279071,
+                            "Time": 0.49246231155778897
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 7.658904997460944e-2,
+                            "Time": 0.49246231155778897
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.2374256190224389e-3,
+                            "Time": 0.49246231155778897
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6281381152067145,
+                            "Time": 0.49748743718592964
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 7.822788617896281e-2,
+                            "Time": 0.49748743718592964
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.2949303367266194e-3,
+                            "Time": 0.49748743718592964
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6363403050326857,
+                            "Time": 0.5025125628140703
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 7.99026859120483e-2,
+                            "Time": 0.5025125628140703
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.3550388233963045e-3,
+                            "Time": 0.5025125628140703
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6445838156270323,
+                            "Time": 0.507537688442211
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 8.16142678040708e-2,
+                            "Time": 0.507537688442211
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.4178688367403299e-3,
+                            "Time": 0.507537688442211
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6528688551543949,
+                            "Time": 0.5125628140703518
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 8.336347013667013e-2,
+                            "Time": 0.5125628140703518
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.4835435246599203e-3,
+                            "Time": 0.5125628140703518
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6611956328281003,
+                            "Time": 0.5175879396984925
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 8.515115135306559e-2,
+                            "Time": 0.5175879396984925
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.5521916772614826e-3,
+                            "Time": 0.5175879396984925
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.669564358915445,
+                            "Time": 0.5226130653266332
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 8.697819058309175e-2,
+                            "Time": 0.5226130653266332
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.6239479910062924e-3,
+                            "Time": 0.5226130653266332
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6779752447430036,
+                            "Time": 0.5276381909547738
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 8.88454881836414e-2,
+                            "Time": 0.5276381909547738
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.6989533456050706e-3,
+                            "Time": 0.5276381909547738
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.686428502701967,
+                            "Time": 0.5326633165829145
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 9.075396629505397e-2,
+                            "Time": 0.5326633165829145
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.7773550942975487e-3,
+                            "Time": 0.5326633165829145
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.6949243462535037,
+                            "Time": 0.5376884422110553
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 9.27045694140108e-2,
+                            "Time": 0.5376884422110553
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.8593073681909798e-3,
+                            "Time": 0.5376884422110553
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.7034629899341516,
+                            "Time": 0.542713567839196
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 9.469826498352413e-2,
+                            "Time": 0.542713567839196
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.9449713953674456e-3,
+                            "Time": 0.542713567839196
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.7120446493612345,
+                            "Time": 0.5477386934673367
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 9.673604400063217e-2,
+                            "Time": 0.5477386934673367
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.03451583550762e-3,
+                            "Time": 0.5477386934673367
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.7206695412383075,
+                            "Time": 0.5527638190954774
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 9.881892164244051e-2,
+                            "Time": 0.5527638190954774
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.12811713081873e-3,
+                            "Time": 0.5527638190954774
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.7293378833606288,
+                            "Time": 0.5577889447236181
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.10094793791117927,
+                            "Time": 0.5577889447236181
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.2259598740968062e-3,
+                            "Time": 0.5577889447236181
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.7380498946206602,
+                            "Time": 0.5628140703517588
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.1031241582989764,
+                            "Time": 0.5628140703517588
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.3282371947981333e-3,
+                            "Time": 0.5628140703517588
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.7468057950135933,
+                            "Time": 0.5678391959798995
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.10534867447307929,
+                            "Time": 0.5678391959798995
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.43515116404221e-3,
+                            "Time": 0.5678391959798995
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.755605805642906,
+                            "Time": 0.5728643216080402
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.10762260498229288,
+                            "Time": 0.5728643216080402
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.546913219518802e-3,
+                            "Time": 0.5728643216080402
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.764450148725945,
+                            "Time": 0.577889447236181
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.10994709598543756,
+                            "Time": 0.577889447236181
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.6637446113247825e-3,
+                            "Time": 0.577889447236181
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.773339047599537,
+                            "Time": 0.5829145728643216
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.11232332200266937,
+                            "Time": 0.5829145728643216
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.7858768698128173e-3,
+                            "Time": 0.5829145728643216
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.78227272672563,
+                            "Time": 0.5879396984924623
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.11475248669054643,
+                            "Time": 0.5879396984924623
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.9135522965936652e-3,
+                            "Time": 0.5879396984924623
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.7912514116969593,
+                            "Time": 0.592964824120603
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.11723582364176782,
+                            "Time": 0.592964824120603
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.0470244798970823e-3,
+                            "Time": 0.592964824120603
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8002753292427458,
+                            "Time": 0.5979899497487438
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.1197745972105591,
+                            "Time": 0.5979899497487438
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.1865588355635315e-3,
+                            "Time": 0.5979899497487438
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8093447072344202,
+                            "Time": 0.6030150753768845
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.12237010336472573,
+                            "Time": 0.6030150753768845
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.332433175010001e-3,
+                            "Time": 0.6030150753768845
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8184597746913778,
+                            "Time": 0.6080402010050251
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.125023670565449,
+                            "Time": 0.6080402010050251
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.4849383015888506e-3,
+                            "Time": 0.6080402010050251
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.827620761786762,
+                            "Time": 0.6130653266331658
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.12773666067595404,
+                            "Time": 0.6130653266331658
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.644378636838832e-3,
+                            "Time": 0.6130653266331658
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8368278998532754,
+                            "Time": 0.6180904522613065
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.1305104699002375,
+                            "Time": 0.6180904522613065
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.8110728782125686e-3,
+                            "Time": 0.6180904522613065
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.846081421389023,
+                            "Time": 0.6231155778894473
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.13334652975310693,
+                            "Time": 0.6231155778894473
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.985354689955448e-3,
+                            "Time": 0.6231155778894473
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8553815600633818,
+                            "Time": 0.628140703517588
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.13624630806284832,
+                            "Time": 0.628140703517588
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.167573428906998e-3,
+                            "Time": 0.628140703517588
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8647285507229023,
+                            "Time": 0.6331658291457286
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.13921131000791093,
+                            "Time": 0.6331658291457286
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.3580949070982635e-3,
+                            "Time": 0.6331658291457286
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8741226293972386,
+                            "Time": 0.6381909547738693
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.1422430791890737,
+                            "Time": 0.6381909547738693
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.557302193127592e-3,
+                            "Time": 0.6381909547738693
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8835640333051085,
+                            "Time": 0.6432160804020101
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.14534319873863707,
+                            "Time": 0.6432160804020101
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.765596454413123e-3,
+                            "Time": 0.6432160804020101
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.8930530008602837,
+                            "Time": 0.6482412060301508
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.14851329246827275,
+                            "Time": 0.6482412060301508
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.9833978425438555e-3,
+                            "Time": 0.6482412060301508
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9025897716776103,
+                            "Time": 0.6532663316582915
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.15175502605725305,
+                            "Time": 0.6532663316582915
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.211146424082613e-3,
+                            "Time": 0.6532663316582915
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9121745865790596,
+                            "Time": 0.6582914572864321
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.15507010828288173,
+                            "Time": 0.6582914572864321
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.44930315931454e-3,
+                            "Time": 0.6582914572864321
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9218076875998096,
+                            "Time": 0.6633165829145728
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.15846029229505226,
+                            "Time": 0.6633165829145728
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.698350931584391e-3,
+                            "Time": 0.6633165829145728
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9314893179943557,
+                            "Time": 0.6683417085427136
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.16192737693697148,
+                            "Time": 0.6683417085427136
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.958795630025381e-3,
+                            "Time": 0.6683417085427136
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.941219722242655,
+                            "Time": 0.6733668341708543
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.16547320811420838,
+                            "Time": 0.6733668341708543
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.231167288653062e-3,
+                            "Time": 0.6733668341708543
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9509991460562988,
+                            "Time": 0.678391959798995
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.16909968021435434,
+                            "Time": 0.678391959798995
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.516021284979594e-3,
+                            "Time": 0.678391959798995
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.960827836384717,
+                            "Time": 0.6834170854271356
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.17280873757972076,
+                            "Time": 0.6834170854271356
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.813939601498615e-3,
+                            "Time": 0.6834170854271356
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9707060414214155,
+                            "Time": 0.6884422110552764
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.17660237603564705,
+                            "Time": 0.6884422110552764
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.12553215359913e-3,
+                            "Time": 0.6884422110552764
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9806340106102422,
+                            "Time": 0.6934673366834171
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.18048264447714998,
+                            "Time": 0.6934673366834171
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.451438187689647e-3,
+                            "Time": 0.6934673366834171
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 1.9906119946516867,
+                            "Time": 0.6984924623115578
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.18445164651681775,
+                            "Time": 0.6984924623115578
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.792327753552684e-3,
+                            "Time": 0.6984924623115578
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.00064024550921,
+                            "Time": 0.7035175879396985
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.18851154219703217,
+                            "Time": 0.7035175879396985
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.14890325520538e-3,
+                            "Time": 0.7035175879396985
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.010719016415609,
+                            "Time": 0.7085427135678392
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.19266454976980088,
+                            "Time": 0.7085427135678392
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.521901084816385e-3,
+                            "Time": 0.7085427135678392
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.0208485618794083,
+                            "Time": 0.7135678391959799
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.19691294754769234,
+                            "Time": 0.7135678391959799
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.912093344523581e-3,
+                            "Time": 0.7135678391959799
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.03102913769129,
+                            "Time": 0.7185929648241206
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.20125907582959207,
+                            "Time": 0.7185929648241206
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.32028966131313e-3,
+                            "Time": 0.7185929648241206
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.0412610009305507,
+                            "Time": 0.7236180904522613
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.20570533890524648,
+                            "Time": 0.7236180904522613
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.747339100460318e-3,
+                            "Time": 0.7236180904522613
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.0515444099715943,
+                            "Time": 0.7286432160804021
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.21025420714282084,
+                            "Time": 0.7286432160804021
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.0194132183397639e-2,
+                            "Time": 0.7286432160804021
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.061879624490456,
+                            "Time": 0.7336683417085427
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.21490821916398448,
+                            "Time": 0.7336683417085427
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.066160301626885e-2,
+                            "Time": 0.7336683417085427
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.072266905471361,
+                            "Time": 0.7386934673366834
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.21966998411134206,
+                            "Time": 0.7386934673366834
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.1150731535851116e-2,
+                            "Time": 0.7386934673366834
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.0827065152133124,
+                            "Time": 0.7437185929648241
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.224542184013359,
+                            "Time": 0.7437185929648241
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.166254587998345e-2,
+                            "Time": 0.7437185929648241
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.0931987173367164,
+                            "Time": 0.7487437185929648
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.2295275762522899,
+                            "Time": 0.7487437185929648
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.2198124890132288e-2,
+                            "Time": 0.7487437185929648
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.103743776790039,
+                            "Time": 0.7537688442211056
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.23462899614100122,
+                            "Time": 0.7537688442211056
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.2758600754256026e-2,
+                            "Time": 0.7537688442211056
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.1143419598564965,
+                            "Time": 0.7587939698492463
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.2398493596149986,
+                            "Time": 0.7587939698492463
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.3345161798704779e-2,
+                            "Time": 0.7587939698492463
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.124993534160779,
+                            "Time": 0.7638190954773869
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.24519166604642095,
+                            "Time": 0.7638190954773869
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.3959055438512384e-2,
+                            "Time": 0.7638190954773869
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.13569876867581,
+                            "Time": 0.7688442211055276
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.25065900118725254,
+                            "Time": 0.7688442211055276
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.4601591296109821e-2,
+                            "Time": 0.7688442211055276
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.1464579337295366,
+                            "Time": 0.7738693467336684
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.2562545402495321,
+                            "Time": 0.7738693467336684
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.5274144499216923e-2,
+                            "Time": 0.7738693467336684
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.1572713010117566,
+                            "Time": 0.7788944723618091
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.2619815511309171,
+                            "Time": 0.7788944723618091
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.597815916945909e-2,
+                            "Time": 0.7788944723618091
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.16813914358098,
+                            "Time": 0.7839195979899498
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.26784339779457933,
+                            "Time": 0.7839195979899498
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.6715152114111953e-2,
+                            "Time": 0.7839195979899498
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.1790617358713225,
+                            "Time": 0.7889447236180904
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.2738435438130886,
+                            "Time": 0.7889447236180904
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.7486716734307805e-2,
+                            "Time": 0.7889447236180904
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.190039353699438,
+                            "Time": 0.7939698492462312
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.27998555608667586,
+                            "Time": 0.7939698492462312
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.8294527164049668e-2,
+                            "Time": 0.7939698492462312
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.20107227427148,
+                            "Time": 0.7989949748743719
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.286273108747064,
+                            "Time": 0.7989949748743719
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 1.9140342655479935e-2,
+                            "Time": 0.7989949748743719
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.212160776190106,
+                            "Time": 0.8040201005025126
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.29270998725893055,
+                            "Time": 0.8040201005025126
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.0026012227051318e-2,
+                            "Time": 0.8040201005025126
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.223305139461508,
+                            "Time": 0.8090452261306533
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.2993000927320067,
+                            "Time": 0.8090452261306533
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.0953479592556123e-2,
+                            "Time": 0.8090452261306533
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.2345056455024865,
+                            "Time": 0.8140703517587939
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.30604744645785575,
+                            "Time": 0.8140703517587939
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.192478839039941e-2,
+                            "Time": 0.8140703517587939
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.245762577147557,
+                            "Time": 0.8190954773869347
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.312956194686497,
+                            "Time": 0.8190954773869347
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.294208773406362e-2,
+                            "Time": 0.8190954773869347
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.2570762186560893,
+                            "Time": 0.8241206030150754
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.32003061365926927,
+                            "Time": 0.8241206030150754
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.4007638106421026e-2,
+                            "Time": 0.8241206030150754
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.2684468557194886,
+                            "Time": 0.8291457286432161
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.3272751149156755,
+                            "Time": 0.8291457286432161
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.5123817622423397e-2,
+                            "Time": 0.8291457286432161
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.2798747754684077,
+                            "Time": 0.8341708542713568
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.3346942508934123,
+                            "Time": 0.8341708542713568
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.629312868675064e-2,
+                            "Time": 0.8341708542713568
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.2913602664799986,
+                            "Time": 0.8391959798994975
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.3422927208423982,
+                            "Time": 0.8391959798994975
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.7518205075254987e-2,
+                            "Time": 0.8391959798994975
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.3029036187851997,
+                            "Time": 0.8442211055276382
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.3500753770753728,
+                            "Time": 0.8442211055276382
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 2.880181947151528e-2,
+                            "Time": 0.8442211055276382
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.314505123876059,
+                            "Time": 0.8492462311557789
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.35804723157956475,
+                            "Time": 0.8492462311557789
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.0146891492542526e-2,
+                            "Time": 0.8492462311557789
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.326165074713095,
+                            "Time": 0.8542713567839196
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.3662134630160469,
+                            "Time": 0.8542713567839196
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.155649624068389e-2,
+                            "Time": 0.8542713567839196
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.3378837657326947,
+                            "Time": 0.8592964824120604
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.374579424135715,
+                            "Time": 0.8592964824120604
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.303387342208692e-2,
+                            "Time": 0.8592964824120604
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.3496614928545494,
+                            "Time": 0.864321608040201
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.3831506496433828,
+                            "Time": 0.864321608040201
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.458243707574888e-2,
+                            "Time": 0.864321608040201
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.3614985534891266,
+                            "Time": 0.8693467336683417
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.3919328645442968,
+                            "Time": 0.8693467336683417
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.620578596122776e-2,
+                            "Time": 0.8693467336683417
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.3733952465451793,
+                            "Time": 0.8743718592964824
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.40093199301046345,
+                            "Time": 0.8743718592964824
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.7907714657578064e-2,
+                            "Time": 0.8743718592964824
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.3853518724372953,
+                            "Time": 0.8793969849246231
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4101541678076013,
+                            "Time": 0.8793969849246231
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 3.9692225431053274e-2,
+                            "Time": 0.8793969849246231
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.397368733093483,
+                            "Time": 0.8844221105527639
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4196057403272885,
+                            "Time": 0.8844221105527639
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.156354093464355e-2,
+                            "Time": 0.8844221105527639
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.4094461319627944,
+                            "Time": 0.8894472361809045
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4292932912730399,
+                            "Time": 0.8894472361809045
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.352611780866684e-2,
+                            "Time": 0.8894472361809045
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.421584374022991,
+                            "Time": 0.8944723618090452
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4392236420536501,
+                            "Time": 0.8944723618090452
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.558466125848021e-2,
+                            "Time": 0.8944723618090452
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.433783765788241,
+                            "Time": 0.8994974874371859
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4494038669422302,
+                            "Time": 0.8994974874371859
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 4.774414069301772e-2,
+                            "Time": 0.8994974874371859
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.446044615316862,
+                            "Time": 0.9045226130653267
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4598413060650218,
+                            "Time": 0.9045226130653267
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.0009806516397755e-2,
+                            "Time": 0.9045226130653267
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.4583672322191,
+                            "Time": 0.9095477386934674
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.47054357929033563,
+                            "Time": 0.9095477386934674
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.238720817439219e-2,
+                            "Time": 0.9095477386934674
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.4707519276649457,
+                            "Time": 0.914572864321608
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4815186010949346,
+                            "Time": 0.914572864321608
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.488221356825394e-2,
+                            "Time": 0.914572864321608
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.483199014391995,
+                            "Time": 0.9195979899497487
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.4927745964929365,
+                            "Time": 0.9195979899497487
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 5.750102996041455e-2,
+                            "Time": 0.9195979899497487
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.4957088067133437,
+                            "Time": 0.9246231155778895
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5043201181209465,
+                            "Time": 0.9246231155778895
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.0250226510071746e-2,
+                            "Time": 0.9246231155778895
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.508281620525526,
+                            "Time": 0.9296482412060302
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5161640645827792,
+                            "Time": 0.9296482412060302
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.313675859190437e-2,
+                            "Time": 0.9296482412060302
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.5209177733164907,
+                            "Time": 0.9346733668341709
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5283157001678938,
+                            "Time": 0.9346733668341709
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.61679940683172e-2,
+                            "Time": 0.9346733668341709
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.533617584173619,
+                            "Time": 0.9396984924623115
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5407846760697195,
+                            "Time": 0.9396984924623115
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 6.935174170502234e-2,
+                            "Time": 0.9396984924623115
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.5463813737917818,
+                            "Time": 0.9447236180904522
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5535810532435592,
+                            "Time": 0.9447236180904522
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.269628194173497e-2,
+                            "Time": 0.9447236180904522
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.559209464481438,
+                            "Time": 0.949748743718593
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5667153270589028,
+                            "Time": 0.949748743718593
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.621040025468459e-2,
+                            "Time": 0.949748743718593
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.572102180176773,
+                            "Time": 0.9547738693467337
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5801984539180318,
+                            "Time": 0.9547738693467337
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 7.990342337597552e-2,
+                            "Time": 0.9547738693467337
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.5850598464438796,
+                            "Time": 0.9597989949748744
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.5940418800319622,
+                            "Time": 0.9597989949748744
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.378525866709306e-2,
+                            "Time": 0.9597989949748744
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.5980827904889776,
+                            "Time": 0.964824120603015
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.6082575725664059,
+                            "Time": 0.964824120603015
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 8.786643698067338e-2,
+                            "Time": 0.964824120603015
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.6111713411666786,
+                            "Time": 0.9698492462311558
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.6228580533948617,
+                            "Time": 0.9698492462311558
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.215815938676164e-2,
+                            "Time": 0.9698492462311558
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.624325828988288,
+                            "Time": 0.9748743718592965
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.6378564357235855,
+                            "Time": 0.9748743718592965
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 9.667234818803658e-2,
+                            "Time": 0.9748743718592965
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.637546586130153,
+                            "Time": 0.9798994974874372
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.6532664638845412,
+                            "Time": 0.9798994974874372
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 0.10142170270390588,
+                            "Time": 0.9798994974874372
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.6508339464420483,
+                            "Time": 0.9849246231155779
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.6691025566280194,
+                            "Time": 0.9849246231155779
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 0.10641976036717493,
+                            "Time": 0.9849246231155779
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.6641882454556094,
+                            "Time": 0.9899497487437187
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.6853798542871311,
+                            "Time": 0.9899497487437187
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 0.11168096375061058,
+                            "Time": 0.9899497487437187
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.677609820392803,
+                            "Time": 0.9949748743718593
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.7021142702325712,
+                            "Time": 0.9949748743718593
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 0.11722073422586902,
+                            "Time": 0.9949748743718593
+                        },
+                        {
+                            "Place": "S",
+                            "Population": 2.691099010174444,
+                            "Time": 1
+                        },
+                        {
+                            "Place": "I",
+                            "Population": 0.7193225470888374,
+                            "Time": 1
+                        },
+                        {
+                            "Place": "R",
+                            "Population": 0.12305555305598805,
+                            "Time": 1
+                        }
+                    ]
+                },
+                "autosize": {
+                    "resize": true,
+                    "contains": "padding",
+                    "type": "fit"
+                },
+                "encoding": {
+                    "y": {
+                        "type": "quantitative",
+                        "field": "Population"
+                    },
+                    "x": {
+                        "type": "temporal",
+                        "field": "Time"
+                    },
+                    "color": {
+                        "type": "nominal",
+                        "field": "Place"
+                    }
+                },
+                "mark": "line",
+                "$schema": "https://vega.github.io/schema/vega-lite/v4.json"
+            };
+            vegaEmbed('#figure_1',vlSpec);</script>
+            <figcaption>
+            The SIR model
+            </figcaption>
+            </figure>
+            </section>
+            </section>
+            </div>
+    </div>
+  </div>
+
+  <script src="https://vjs.zencdn.net/5.4.4/video.js"></script>
+
+</body>
+</html>
