@@ -7,11 +7,8 @@
 
 module Main where
 
-import Data.Coerce (coerce)
-import Data.Function
 import qualified Data.Map as M
 import qualified Data.Map.Monoidal.Strict as MMap
-import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum (..))
 import Data.String.Here (here)
 import qualified Data.Text as T
@@ -26,19 +23,18 @@ import Petri.Stochastic
     runPetriMorphism,
     sirNet,
   )
-import qualified Plots as P
 
 ts :: Vector Double
-ts = linspace 200 (0, 1 :: Double)
+ts = linspace 400 (0, 100 :: Double)
 
 sol :: Matrix Double
-sol = odeSolve xdot [0.99, 0.01, 0] ts
+sol = odeSolve sirODE [0.99, 0.01, 0] ts
   where
-    sirMorphism = foldNeighborsEndo (sirNet (0.04 :: Double) 0.04) S
-    xdot _ [s, i, r] =
+    sirMorphism = foldNeighborsEndo (sirNet (0.4 :: Double) 0.4) S
+    sirODE _ [s, i, r] =
       let result = getSum <$> runPetriMorphism sirMorphism (MMap.fromList [(S, Sum s), (I, Sum i), (R, Sum r)])
        in [result MMap.! S, result MMap.! I, result MMap.! R]
-    xdot _ _ = error "Impossible."
+    sirODE _ _ = error "Impossible."
 
 templateVars :: M.Map String String
 templateVars =
