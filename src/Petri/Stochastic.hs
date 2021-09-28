@@ -6,6 +6,10 @@
 {-# LANGUAGE RankNTypes #-}
 
 -- | A stochastic petri net is a petri net with rate constants for every transition.  See: https://math.ucr.edu/home/baez/structured_vs_decorated/structured_vs_decorated_companions_web.pdf
+-- TODO: This will be more efficient if we lean on linear algebra and use morphisms in VectK by building a "vector field representation"
+-- of the transition matrix.  This amounts to building the representation of the graph in a matrix of edges and computing rates and updates using BLAS primatives.
+-- See: https://github.com/AlgebraicJulia/AlgebraicPetri.jl/blob/91535bd5aea8b8bbc3de25d1c7b55071017c1801/src/AlgebraicPetri.jl#L256-L264
+-- We can do this using HMatix if we don't care about cross compilation to JS or we can maybe use massiv if we do, tbd.
 module Petri.Stochastic
   ( toStocastic,
     runPetriMorphism,
