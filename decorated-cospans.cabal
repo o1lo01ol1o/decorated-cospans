@@ -30,6 +30,7 @@ common common-options
     , matrix
     , monoidal-containers
     , mtl
+    , these
     , transformers
     , vector
 
