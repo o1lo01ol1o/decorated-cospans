@@ -20,6 +20,8 @@ module Petri.Stochastic
     toPetriMorphism,
     toVectorField,
     sirNet,
+    PetriNode,
+    Stochastic (..),
     SIR (..),
   )
 where
