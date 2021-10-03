@@ -27,9 +27,11 @@ common common-options
     , bifunctors
     , containers
     , finitary
+    , matrix
     , monoidal-containers
     , mtl
     , transformers
+    , vector
 
   ghc-options:
     -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
