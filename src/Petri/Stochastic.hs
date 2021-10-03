@@ -1,9 +1,16 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingVia #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | A stochastic petri net is a petri net with rate constants for every transition.  See: https://math.ucr.edu/home/baez/structured_vs_decorated/structured_vs_decorated_companions_web.pdf
 -- TODO: This will be more efficient if we lean on linear algebra and use morphisms in VectK by building a "vector field representation"
@@ -23,16 +30,24 @@ where
 
 import Algebra.Graph.AdjacencyMap
   ( AdjacencyMap (..),
+    edgeList,
     edges,
   )
+import Control.Monad.State.Strict (MonadState, execState, modify, runState)
 import Data.Bifunctor (Bifunctor (bimap))
+import Data.Finitary
+import Data.Map
 import qualified Data.Map as Map
 import qualified Data.Map.Monoidal.Strict as MMap
+import Data.Matrix hiding (trace)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Endo (..), Sum (..))
 import qualified Data.Set as Set
+import Data.Vector (Vector, generate)
+import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
+import GHC.TypeNats (type (<=))
 
 -- | Nodes in the graph will either be Places or Transitions
 data PetriNode p t = Place p | Transition t
@@ -215,3 +230,112 @@ test =
       net = sirNet r_1 r_2
       kont = foldNeighborsEndo net S
    in runPetriMorphism kont (MMap.fromList [(S, Sum 0.99), (I, Sum 0.01), (R, Sum 0)])
+
+-- | Encodes if the Place (row) is an input / output of the Transition (column)
+data TransitionMatrices r = TransitionMatrices
+  { transitionMatricesInput :: Matrix r,
+    transitionMatricesOutput :: Matrix r
+  }
+  deriving stock (Eq, Show, Generic)
+
+-- | Is the Place serving as an input or output of the Transition?
+registerConnection ::
+  (Num r, MonadState (TransitionMatrices r) m, Finitary p, Finitary t) =>
+  (PetriNode p t, PetriNode p t) ->
+  m ()
+registerConnection (Place source, Transition target) =
+  modify
+    ( \st ->
+        st
+          { transitionMatricesInput =
+              unsafeSet
+                1
+                (fromIntegral $ toFinite source, fromIntegral $ toFinite target)
+                . transitionMatricesInput
+                $ st
+          }
+    )
+registerConnection (Transition source, Place target) =
+  modify
+    ( \st ->
+        st
+          { transitionMatricesOutput =
+              unsafeSet
+                1
+                ( fromIntegral $ toFinite source,
+                  fromIntegral $ toFinite target
+                )
+                . transitionMatricesOutput
+                $ st
+          }
+    )
+registerConnection _ = error "Invalid edge: places must alternate with transitions!" -- TODO: use throwM or expose safe API functions
+
+toTransitionMatrices ::
+  forall r p t.
+  ( Num r,
+    Finitary p,
+    Finitary t,
+    1 <= Cardinality p,
+    1 <= Cardinality t
+  ) =>
+  AdjacencyMap (PetriNode p t) ->
+  TransitionMatrices r
+toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
+  where
+    go = mconcat <$> traverse registerConnection (edgeList pn)
+    zeros = zero (fromIntegral $ toFinite @p end) (fromIntegral $ toFinite @t end)
+
+-- | Yield a function that calculates the vectorfield of a StochasticNet with initial conditions at some time `t` for the given the network
+-- and rate function.  We use `Map`s here only for convience.
+-- See https://en.wikipedia.org/wiki/Petri_net#Formulation_in_terms_of_vectors_and_matrices
+-- and https://arxiv.org/abs/1704.02051 for details.
+-- This implmentation is not optimized for performance though it uses @Vector@ under the hood.  We care
+-- more about portability at the momement and so use a pure Haskell implementation over using
+-- BLAS in `HMatrix`, `hasktorch`, or massiv.
+toVectorField ::
+  forall r p t.
+  ( Floating r,
+    Finitary p,
+    Finitary t,
+    1 <= Cardinality p,
+    1 <= Cardinality t,
+    Ord p
+  ) =>
+  AdjacencyMap (PetriNode p t) ->
+  (t -> r) ->
+  (Map p r -> r -> Map p r)
+toVectorField pn rate' = \u _time -> du (currentRates u)
+  where
+    -- auxiliary helpers
+    (TransitionMatrices input output) = toTransitionMatrices pn
+    dt = output - input
+    forPlaces = for (inhabitants @p)
+    forTransitions = for (inhabitants @t)
+    toIdx f = f . (fromIntegral . toFinite)
+    forTransitionIdx = forTransitions . toIdx
+    nTransitions = fromIntegral $ toFinite @t end
+    -- calculate a vecotr of current rate coefficients of each transition given by rate * product of all inputs to that transition
+    currentRates u =
+      generate
+        nTransitions
+        ( \t_i ->
+            let transition = fromFinite @t (fromIntegral t_i)
+             in (rate' transition *) . product $
+                  for (inhabitants @p) $
+                    \place ->
+                      let s_i = fromIntegral $ toFinite place
+                          valAtS = u Map.! place
+                       in valAtS ** unsafeGet s_i t_i input -- will either valAtS ^ 1 or valAtS ^ 0
+        )
+    -- calculate the derivative of the initial states `u` by multiplying the rates against the values of the final transition matrix
+    du rates =
+      Map.fromList $
+        forPlaces
+          ( \place -> (place,) $
+              sum $
+                forTransitionIdx $
+                  \t_i ->
+                    let s_i = (fromIntegral . toFinite $ place)
+                     in rates Vector.! t_i * unsafeGet s_i t_i dt
+          )
