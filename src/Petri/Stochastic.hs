@@ -36,7 +36,7 @@ import Algebra.Graph.AdjacencyMap
     edgeList,
     edges,
   )
-import Control.Monad.State.Strict (MonadState, execState, modify)
+import Control.Monad.State.Strict (MonadState, execState, modify, runState)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
 import Data.Map
