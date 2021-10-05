@@ -1,6 +1,6 @@
 # decorated-cospans
 
-[![GitHub CI](https://github.com/o1lo01ol1o/decorated-cospans/workflows/CI/badge.svg)](https://github.com/o1lo01ol1o/decorated-cospans/actions)
+[![GitHub CI](https://github.com/o1lo01ol1o/decorated-cospans/workflows/ci.yml/badge.svg)](https://github.com/o1lo01ol1o/decorated-cospans/actions)
 [![Hackage](https://img.shields.io/hackage/v/decorated-cospans.svg?logo=haskell)](https://hackage.haskell.org/package/decorated-cospans)
 
 ## Hacking
