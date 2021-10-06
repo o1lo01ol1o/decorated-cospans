@@ -21,7 +21,8 @@ module Petri.Stochastic
   ( toStocastic,
     runPetriMorphism,
     foldMapNeighbors,
-    foldNeighborsEndo,
+    -- foldNeighborsEndo,
+    toVectorField,
     sirNet,
     SIR (..),
     debug,
@@ -146,19 +147,19 @@ computeUpdates rateFn (Place source) (Transition t') (Place target) = PetriMorph
 computeUpdates _ _ _ _ = mempty
 
 -- | The fold that applies the above Endos
-foldNeighborsEndo ::
-  (Ord p, Ord t, Num r, Show p, Show t) =>
-  Stochastic p t r ->
-  p ->
-  PetriMorphism p r
-foldNeighborsEndo stochasticNet start = foldMapNeighbors net' seen (Place start) f
-  where
-    seen = mempty
-    net' = net stochasticNet
-    f acc (source, transition, target) =
-      let !acc' = computeUpdates (rate stochasticNet) source transition target
-       in acc <> acc' -- N.B the order of mappending matters!
-
+-- FD commenting out to refactor
+-- foldNeighborsEndo ::
+--   (Ord p, Ord t, Num r, Show p, Show t) =>
+--   Stochastic p t r ->
+--   p ->
+--   PetriMorphism p r
+-- foldNeighborsEndo stochasticNet start = foldMapNeighbors net' seen (Place start) f
+--   where
+--     seen = mempty
+--     net' = net stochasticNet
+--     f acc (source, transition, target) =
+--       let !acc' = computeUpdates (rate stochasticNet) source transition target
+--        in acc <> acc' -- N.B the order of mappending matters!
 toStocastic ::
   (Ord p, Ord t) =>
   (r -> t -> r -> r) ->
