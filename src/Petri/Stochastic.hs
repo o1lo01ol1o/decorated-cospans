@@ -39,6 +39,7 @@ import Algebra.Graph.AdjacencyMap
 import Control.Monad.State.Strict (MonadState, execState, modify, runState)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
+import Data.Finitary (Finitary)
 import Data.Map
 import qualified Data.Map as Map
 import Data.Matrix hiding (trace)
@@ -47,6 +48,7 @@ import Data.Vector (generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
+import GHC.RTS.Flags (GCFlags (initialStkSize))
 import GHC.TypeNats (type (<=))
 import Utils.Containers.Internal.StrictPair (toPair)
 
