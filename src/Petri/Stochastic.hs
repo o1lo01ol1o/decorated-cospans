@@ -1,11 +1,13 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -37,6 +39,7 @@ import Algebra.Graph.AdjacencyMap
 import Control.Monad.State.Strict (MonadState, execState, modify, runState)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
+import Data.Finitary (Finitary)
 import Data.Map
 import qualified Data.Map as Map
 import qualified Data.Map.Monoidal.Strict as MMap
@@ -48,6 +51,7 @@ import Data.Vector (Vector, generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
+import GHC.RTS.Flags (GCFlags (initialStkSize))
 import GHC.TypeNats (type (<=))
 
 -- | Nodes in the graph will either be Places or Transitions
@@ -77,22 +81,17 @@ data Stochastic p t r = Stochastic
 -- >>> let b = (PetriMorphism . Endo $ \(a, b) -> (a , b <> j))
 -- >>> runPetriMorphism (mconcat [mempty, a, mempty, b, mempty]) (MMap.fromList $ [(S, -2), (I, 0), (R, 2)])
 -- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1}),(I,Sum {getSum = 0}),(R,Sum {getSum = 1})]}
-newtype PetriMorphism p b = PetriMorphism
+newtype PetriMorphism p r = PetriMorphism
   { unPetriMorphism ::
-      Endo
-        ( MMap.MonoidalMap p (Sum b),
-          MMap.MonoidalMap p (Sum b),
-          MMap.MonoidalMap p (Sum b)
-        )
+      Map p r ->
+      Map p r
   }
   deriving stock (Generic)
   deriving newtype (Monoid, Semigroup)
 
 -- | Run a PetriMorphism with some initial values.  Note that we only combine the updates after the whole graph is composed.
-runPetriMorphism :: (Ord p, Num b) => PetriMorphism p b -> MMap.MonoidalMap p (Sum b) -> MMap.MonoidalMap p (Sum b)
-runPetriMorphism (PetriMorphism endo) initialValues = source <> target
-  where
-    (source, target, _) = appEndo endo (mempty, mempty, initialValues)
+runPetriMorphism :: PetriMorphism p b -> Map p b -> Map p b
+runPetriMorphism (PetriMorphism endo) = endo
 
 for :: [a] -> (a -> b) -> [b]
 for = flip fmap
@@ -130,21 +129,21 @@ foldMapNeighbors net' seen start f =
                    in f recurse (start, transition, target)
 
 -- | compute the updates given a source, target, and rate function.
-computeUpdates ::
-  (Ord p, Num b) =>
-  (b -> t -> b -> b) ->
-  PetriNode p t ->
-  PetriNode p t ->
-  PetriNode p t ->
-  PetriMorphism p b
-computeUpdates rateFn (Place source) (Transition t') (Place target) = PetriMorphism . Endo $ \(sourceUpdate, targetUpdate, initialValues) ->
-  let source' = fromMaybe mempty . MMap.lookup source $ initialValues
-      target' = fromMaybe mempty . MMap.lookup target $ initialValues
-      rateConst = rateFn (getSum source') t' (getSum target')
-      targetUpdate' = MMap.singleton target (fmap (rateConst *) source')
-      sourceUpdate' = MMap.singleton source (fmap (negate . (rateConst *)) source')
-   in (sourceUpdate' <> sourceUpdate, targetUpdate <> targetUpdate', initialValues)
-computeUpdates _ _ _ _ = mempty
+-- computeUpdates ::
+--   (Ord p, Num b) =>
+--   (b -> t -> b -> b) ->
+--   PetriNode p t ->
+--   PetriNode p t ->
+--   PetriNode p t ->
+--   PetriMorphism p b
+-- computeUpdates rateFn (Place source) (Transition t') (Place target) = PetriMorphism . Endo $ \(sourceUpdate, targetUpdate, initialValues) ->
+--   let source' = fromMaybe mempty . MMap.lookup source $ initialValues
+--       target' = fromMaybe mempty . MMap.lookup target $ initialValues
+--       rateConst = rateFn (getSum source') t' (getSum target')
+--       targetUpdate' = MMap.singleton target (fmap (rateConst *) source')
+--       sourceUpdate' = MMap.singleton source (fmap (negate . (rateConst *)) source')
+--    in (sourceUpdate' <> sourceUpdate, targetUpdate <> targetUpdate', initialValues)
+-- computeUpdates _ _ _ _ = mempty
 
 -- | The fold that applies the above Endos
 -- FD commenting out to refactor
@@ -169,7 +168,8 @@ toStocastic rateFn netEdges = Stochastic (edges netEdges) rateFn
 
 -- | The SIR model
 data SIR = S | I | R
-  deriving stock (Eq, Ord, Show, Enum, Bounded)
+  deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
+  deriving anyclass (Finitary)
 
 s :: PetriNode SIR t
 s = Place S
@@ -181,7 +181,8 @@ r :: PetriNode SIR t
 r = Place R
 
 data R = R_1 | R_2
-  deriving stock (Eq, Ord, Show, Enum, Bounded)
+  deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
+  deriving anyclass (Finitary)
 
 r_1 :: PetriNode p R
 r_1 = Transition R_1
@@ -226,11 +227,11 @@ sirNet r1 r2 = toStocastic rateFn sirEdges
 -- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1.9602e-4}),(I,Sum {getSum = 1.8602e-4}),(R,Sum {getSum = 1.0e-5})]}
 test :: MMap.MonoidalMap SIR (Sum Double)
 test =
-  let r_1 = 0.02
-      r_2 = 0.05
-      net = sirNet r_1 r_2
-      kont = foldNeighborsEndo net S
-   in runPetriMorphism kont (MMap.fromList [(S, Sum 0.99), (I, Sum 0.01), (R, Sum 0)])
+  let stochasticNet = net (sirNet r_1 r_2)
+      kont = toVectorField stochasticNet $ \case
+        R_1 -> 0.02
+        R_2 -> 0.05
+   in runPetriMorphism kont (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
 
 -- | Encodes if the Place (row) is an input / output of the Transition (column)
 data TransitionMatrices r = TransitionMatrices
