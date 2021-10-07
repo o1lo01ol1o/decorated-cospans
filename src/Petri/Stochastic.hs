@@ -66,7 +66,7 @@ instance Bifunctor PetriNode where
 -- TODO:  It may in some cases also be defined by multiple edges between two nodes. Dunno what semanticcs are required here.
 data Stochastic p t r = Stochastic
   { net :: AdjacencyMap (PetriNode p t),
-    rate :: r -> t -> r -> r
+    rate :: t -> r
   }
 
 -- | Our basic algorithm needs to move over the graph and propagate values from source nodes to target nodes.
@@ -161,7 +161,7 @@ foldMapNeighbors net' seen start f =
 --        in acc <> acc' -- N.B the order of mappending matters!
 toStocastic ::
   (Ord p, Ord t) =>
-  (r -> t -> r -> r) ->
+  (t -> r) ->
   [(PetriNode p t, PetriNode p t)] ->
   Stochastic p t r
 toStocastic rateFn netEdges = Stochastic (edges netEdges) rateFn
@@ -215,23 +215,22 @@ sirEdges =
 -- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1.9958730398756031e-4}),(I,Sum {getSum = 1.8921180364352033e-4}),(R,Sum {getSum = 1.0375500344040002e-5})]}"
 -- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -2.032127873982716e-4}),(I,Sum {getSum = 1.9244824390033798e-4}),(R,Sum {getSum = 1.0764543497933596e-5})]}"
 sirNet :: (Num r, Eq r) => r -> r -> Stochastic SIR R r
+-- need to have Stochastic datatype take as field the rate function (rateFn)
+-- test should pull the values required by toVectorField out
 sirNet r1 r2 = toStocastic rateFn sirEdges
   where
-    rateFn source R_1 target
-      | target == 0 = 0
-      | source == 0 = 0
-      | otherwise = 2 * r1 * target * source
-    rateFn source R_2 _ = source * r2
+    rateFn R_1 = r1
+    rateFn R_2 = r2
 
 -- >>> test
 -- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1.9602e-4}),(I,Sum {getSum = 1.8602e-4}),(R,Sum {getSum = 1.0e-5})]}
-test :: MMap.MonoidalMap SIR (Sum Double)
+test :: Map SIR Double
 test =
-  let stochasticNet = net (sirNet r_1 r_2)
-      kont = toVectorField stochasticNet $ \case
-        R_1 -> 0.02
-        R_2 -> 0.05
-   in runPetriMorphism kont (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
+  let testPetrinet = sirNet 0.02 0.05
+      stochasticNet = net testPetrinet
+      ratePart = rate testPetrinet
+      kont = toVectorField stochasticNet ratePart
+   in runPetriMorphism (PetriMorphism kont) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
 
 -- | Encodes if the Place (row) is an input / output of the Transition (column)
 data TransitionMatrices r = TransitionMatrices
@@ -306,8 +305,8 @@ toVectorField ::
   ) =>
   AdjacencyMap (PetriNode p t) ->
   (t -> r) ->
-  (Map p r -> r -> Map p r)
-toVectorField pn rate' = \u _time -> du (currentRates u)
+  (Map p r -> Map p r)
+toVectorField pn rate' = du . currentRates
   where
     -- auxiliary helpers
     (TransitionMatrices input output) = toTransitionMatrices pn
