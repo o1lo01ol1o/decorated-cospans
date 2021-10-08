@@ -20,7 +20,7 @@
 -- See: https://github.com/AlgebraicJulia/AlgebraicPetri.jl/blob/91535bd5aea8b8bbc3de25d1c7b55071017c1801/src/AlgebraicPetri.jl#L256-L264
 -- We can do this using HMatix if we don't care about cross compilation to JS or we can maybe use massiv if we do, tbd.
 module Petri.Stochastic
-  ( toStocastic,
+  ( toStochastic,
     runPetriMorphism,
     foldMapNeighbors,
     -- foldNeighborsEndo,
@@ -36,22 +36,17 @@ import Algebra.Graph.AdjacencyMap
     edgeList,
     edges,
   )
-import Control.Monad.State.Strict (MonadState, execState, modify, runState)
+import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
-import Data.Finitary (Finitary)
 import Data.Map
 import qualified Data.Map as Map
-import qualified Data.Map.Monoidal.Strict as MMap
 import Data.Matrix hiding (trace)
-import Data.Maybe (fromMaybe)
-import Data.Monoid (Endo (..), Sum (..))
 import qualified Data.Set as Set
-import Data.Vector (Vector, generate)
+import Data.Vector (generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
-import GHC.RTS.Flags (GCFlags (initialStkSize))
 import GHC.TypeNats (type (<=))
 
 -- | Nodes in the graph will either be Places or Transitions
@@ -159,12 +154,12 @@ foldMapNeighbors net' seen start f =
 --     f acc (source, transition, target) =
 --       let !acc' = computeUpdates (rate stochasticNet) source transition target
 --        in acc <> acc' -- N.B the order of mappending matters!
-toStocastic ::
+toStochastic ::
   (Ord p, Ord t) =>
   (t -> r) ->
   [(PetriNode p t, PetriNode p t)] ->
   Stochastic p t r
-toStocastic rateFn netEdges = Stochastic (edges netEdges) rateFn
+toStochastic rateFn netEdges = Stochastic (edges netEdges) rateFn
 
 -- | The SIR model
 data SIR = S | I | R
@@ -217,7 +212,7 @@ sirEdges =
 sirNet :: (Num r, Eq r) => r -> r -> Stochastic SIR R r
 -- need to have Stochastic datatype take as field the rate function (rateFn)
 -- test should pull the values required by toVectorField out
-sirNet r1 r2 = toStocastic rateFn sirEdges
+sirNet r1 r2 = toStochastic rateFn sirEdges
   where
     rateFn R_1 = r1
     rateFn R_2 = r2
@@ -231,6 +226,12 @@ test =
       ratePart = rate testPetrinet
       kont = toVectorField stochasticNet ratePart
    in runPetriMorphism (PetriMorphism kont) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
+
+-- FD TO there should be a function that takes any stockastic net and returns a petrimorphism; toPetriMorphism
+-- build stochastic net; pull out adjacecy map; pull out rate function, pass these to toVectorField and returns pmorphism;
+-- i.e. you want to be able to pass this function sirNet with requisite arguments; and give the petriMorphism
+
+-- FD TODO Further remove redundant comments; address warnings; check main.hs executable to see that it typechecks
 
 -- | Encodes if the Place (row) is an input / output of the Transition (column)
 data TransitionMatrices r = TransitionMatrices

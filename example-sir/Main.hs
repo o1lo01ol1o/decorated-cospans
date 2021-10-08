@@ -27,6 +27,7 @@ import Petri.Stochastic
 ts :: Vector Double
 ts = linspace 400 (0, 100 :: Double)
 
+-- FD TODO will be necessary to pass map rather than monoidal map to sirMorphism
 sol :: Matrix Double
 sol = odeSolve sirODE [0.99, 0.01, 0] ts
   where
