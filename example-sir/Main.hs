@@ -8,8 +8,6 @@
 module Main where
 
 import qualified Data.Map as M
-import qualified Data.Map.Monoidal.Strict as MMap
-import Data.Monoid (Sum (..))
 import Data.String.Here (here)
 import qualified Data.Text as T
 import Graphics.Vega.VegaLite (dataFromRows, dataRow)
