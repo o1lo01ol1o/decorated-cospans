@@ -15,7 +15,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 -- | A stochastic petri net is a petri net with rate constants for every transition.  See: https://math.ucr.edu/home/baez/structured_vs_decorated/structured_vs_decorated_companions_web.pdf
--- TODO: This will be more efficient if we lean on linear algebra and use morphisms in VectK by building a "vector field representation"
+-- DONE?: This will be more efficient if we lean on linear algebra and use morphisms in VectK by building a "vector field representation"
 -- of the transition matrix.  This amounts to building the representation of the graph in a matrix of edges and computing rates and updates using BLAS primatives.
 -- See: https://github.com/AlgebraicJulia/AlgebraicPetri.jl/blob/91535bd5aea8b8bbc3de25d1c7b55071017c1801/src/AlgebraicPetri.jl#L256-L264
 -- We can do this using HMatix if we don't care about cross compilation to JS or we can maybe use massiv if we do, tbd.
@@ -23,7 +23,6 @@ module Petri.Stochastic
   ( toStochastic,
     runPetriMorphism,
     foldMapNeighbors,
-    -- foldNeighborsEndo,
     toVectorField,
     sirNet,
     SIR (..),
@@ -39,7 +38,6 @@ import Algebra.Graph.AdjacencyMap
 import Control.Monad.State.Strict (MonadState, execState, modify, runState)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
-import Data.Finitary (Finitary)
 import Data.Map
 import qualified Data.Map as Map
 import Data.Matrix hiding (trace)
@@ -48,9 +46,7 @@ import Data.Vector (generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
-import GHC.RTS.Flags (GCFlags (initialStkSize))
 import GHC.TypeNats (type (<=))
-import Utils.Containers.Internal.StrictPair (toPair)
 
 -- | Nodes in the graph will either be Places or Transitions
 data PetriNode p t = Place p | Transition t
@@ -60,25 +56,12 @@ instance Bifunctor PetriNode where
   bimap f _ (Place p) = Place $ f p
   bimap _ f (Transition p) = Transition $ f p
 
--- | A stochastic petri net is defined by graph of nodes an a rate function.
 -- TODO:  It may in some cases also be defined by multiple edges between two nodes. Dunno what semanticcs are required here.
 data Stochastic p t r = Stochastic
   { net :: AdjacencyMap (PetriNode p t),
     rate :: t -> r
   }
 
--- | Our basic algorithm needs to move over the graph and propagate values from source nodes to target nodes.
--- it also needs to remove values from the source nodes but only at the end of the walk over the graph.
--- Now, we could update values as we walk over graph but this would mean we would need to walk the whole
--- structure each time we want to simulate initial values.  Instead, we walk the struccture once and return
--- a function that can be called with initial values.  This is the @Endo@ type, which is a mondoid that
--- composes functions for it's `mappend` and does `id` for mempty.
--- >>> let k = (MMap.fromList $ [(S, 1), (I, 1), (R, 0)])
--- >>> let j = (MMap.fromList $ [(S, 0), (I, -1), (R, -1)])
--- >>> let a = (PetriMorphism . Endo $ \(a, b) -> (a <> k, b))
--- >>> let b = (PetriMorphism . Endo $ \(a, b) -> (a , b <> j))
--- >>> runPetriMorphism (mconcat [mempty, a, mempty, b, mempty]) (MMap.fromList $ [(S, -2), (I, 0), (R, 2)])
--- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1}),(I,Sum {getSum = 0}),(R,Sum {getSum = 1})]}
 newtype PetriMorphism p r = PetriMorphism
   { unPetriMorphism ::
       Map p r ->
@@ -126,37 +109,6 @@ foldMapNeighbors net' seen start f =
                           f
                    in f recurse (start, transition, target)
 
--- | compute the updates given a source, target, and rate function.
--- computeUpdates ::
---   (Ord p, Num b) =>
---   (b -> t -> b -> b) ->
---   PetriNode p t ->
---   PetriNode p t ->
---   PetriNode p t ->
---   PetriMorphism p b
--- computeUpdates rateFn (Place source) (Transition t') (Place target) = PetriMorphism . Endo $ \(sourceUpdate, targetUpdate, initialValues) ->
---   let source' = fromMaybe mempty . MMap.lookup source $ initialValues
---       target' = fromMaybe mempty . MMap.lookup target $ initialValues
---       rateConst = rateFn (getSum source') t' (getSum target')
---       targetUpdate' = MMap.singleton target (fmap (rateConst *) source')
---       sourceUpdate' = MMap.singleton source (fmap (negate . (rateConst *)) source')
---    in (sourceUpdate' <> sourceUpdate, targetUpdate <> targetUpdate', initialValues)
--- computeUpdates _ _ _ _ = mempty
-
--- | The fold that applies the above Endos
--- FD commenting out to refactor
--- foldNeighborsEndo ::
---   (Ord p, Ord t, Num r, Show p, Show t) =>
---   Stochastic p t r ->
---   p ->
---   PetriMorphism p r
--- foldNeighborsEndo stochasticNet start = foldMapNeighbors net' seen (Place start) f
---   where
---     seen = mempty
---     net' = net stochasticNet
---     f acc (source, transition, target) =
---       let !acc' = computeUpdates (rate stochasticNet) source transition target
---        in acc <> acc' -- N.B the order of mappending matters!
 toStochastic ::
   (Ord p, Ord t) =>
   (t -> r) ->
@@ -200,18 +152,14 @@ sirEdges =
 -- | Define a SIR model given two rates
 -- >>> let r_1 = 0.02
 -- >>> let r_2 = 0.05
--- >>> let net = sirNet r_1 r_2
--- >>> let kont = foldNeighborsEndo net S
--- >>> let inits = (MMap.fromList $ [(S, Sum 0.99), (I, Sum 0.01), (R, 0)])
+-- >>> let kont = toPetriMorphism $sirNet r_1 r_2
+-- >>> let inits = (Map.fromList $ [(S, Sum 0.99), (I, Sum 0.01), (R, 0)])
 -- >>> let t1 = runPetriMorphism kont inits
 -- >>> let t2 = runPetriMorphism kont (t1 <> inits)
 -- >>> let t3 = runPetriMorphism kont (t2 <> t1 <> inits)
 -- >>> show t1
 -- >>> show t2
 -- >>> show t3
--- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1.9602e-4}),(I,Sum {getSum = 1.8602e-4}),(R,Sum {getSum = 1.0e-5})]}"
--- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1.9958730398756031e-4}),(I,Sum {getSum = 1.8921180364352033e-4}),(R,Sum {getSum = 1.0375500344040002e-5})]}"
--- "MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -2.032127873982716e-4}),(I,Sum {getSum = 1.9244824390033798e-4}),(R,Sum {getSum = 1.0764543497933596e-5})]}"
 sirNet :: (Num r, Eq r) => r -> r -> Stochastic SIR R r
 -- need to have Stochastic datatype take as field the rate function (rateFn)
 -- test should pull the values required by toVectorField out
@@ -246,12 +194,6 @@ test2 :: Map SIR Double
 test2 =
   let testPetrinet = sirNet 0.02 0.05
    in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
-
--- FD TO there should be a function that takes any stockastic net and returns a petrimorphism; toPetriMorphism
--- build stochastic net; pull out adjacecy map; pull out rate function, pass these to toVectorField and returns pmorphism;
--- i.e. you want to be able to pass this function sirNet with requisite arguments; and give the petriMorphism
-
--- FD TODO Further remove redundant comments; address warnings; check main.hs executable to see that it typechecks
 
 -- | Encodes if the Place (row) is an input / output of the Transition (column)
 data TransitionMatrices r = TransitionMatrices
