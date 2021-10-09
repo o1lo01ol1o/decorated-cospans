@@ -19,9 +19,10 @@ import Numeric.GSL (odeSolve)
 import Numeric.LinearAlgebra (Matrix, Vector, fromColumns, linspace, toColumns, toList, toRows)
 import Petri.Stochastic
   ( SIR (I, R, S),
-    foldNeighborsEndo,
+    --- foldNeighborsEndo,
     runPetriMorphism,
     sirNet,
+    toPetriMorphism,
   )
 
 ts :: Vector Double
@@ -31,10 +32,10 @@ ts = linspace 400 (0, 100 :: Double)
 sol :: Matrix Double
 sol = odeSolve sirODE [0.99, 0.01, 0] ts
   where
-    sirMorphism = foldNeighborsEndo (sirNet (0.4 :: Double) 0.4) S
+    sirMorphism = toPetriMorphism (sirNet (0.4 :: Double) 0.4)
     sirODE _ [s, i, r] =
-      let result = getSum <$> runPetriMorphism sirMorphism (MMap.fromList [(S, Sum s), (I, Sum i), (R, Sum r)])
-       in [result MMap.! S, result MMap.! I, result MMap.! R]
+      let result = runPetriMorphism sirMorphism (M.fromList [(S, s), (I, i), (R, r)])
+       in [result M.! S, result M.! I, result M.! R]
     sirODE _ _ = error "Impossible."
 
 templateVars :: M.Map String String
