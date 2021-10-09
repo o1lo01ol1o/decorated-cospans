@@ -22,6 +22,7 @@
 module Petri.Stochastic
   ( toStochastic,
     runPetriMorphism,
+    toPetriMorphism,
     foldMapNeighbors,
     -- foldNeighborsEndo,
     toVectorField,
@@ -39,6 +40,7 @@ import Algebra.Graph.AdjacencyMap
 import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
+import Data.Finitary (Finitary)
 import Data.Map
 import qualified Data.Map as Map
 import qualified Data.Map.Monoidal.Strict as MMap
@@ -50,6 +52,7 @@ import Data.Vector (Vector, generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
+import GHC.RTS.Flags (GCFlags (initialStkSize))
 import GHC.TypeNats (type (<=))
 import Utils.Containers.Internal.StrictPair (toPair)
 
