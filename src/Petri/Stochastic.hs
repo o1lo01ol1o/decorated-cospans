@@ -48,6 +48,7 @@ import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
 import GHC.TypeNats (type (<=))
+import Utils.Containers.Internal.StrictPair (toPair)
 
 -- | Nodes in the graph will either be Places or Transitions
 data PetriNode p t = Place p | Transition t
@@ -226,6 +227,23 @@ test =
       ratePart = rate testPetrinet
       kont = toVectorField stochasticNet ratePart
    in runPetriMorphism (PetriMorphism kont) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
+
+toPetriMorphism ::
+  ( Floating r,
+    Finitary p,
+    Finitary t,
+    1 <= Cardinality p,
+    1 <= Cardinality t,
+    Ord p
+  ) =>
+  Stochastic p t r ->
+  PetriMorphism p r
+toPetriMorphism pn = PetriMorphism $toVectorField (net pn) (rate pn)
+
+test2 :: Map SIR Double
+test2 =
+  let testPetrinet = sirNet 0.02 0.05
+   in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
 
 -- FD TO there should be a function that takes any stockastic net and returns a petrimorphism; toPetriMorphism
 -- build stochastic net; pull out adjacecy map; pull out rate function, pass these to toVectorField and returns pmorphism;
