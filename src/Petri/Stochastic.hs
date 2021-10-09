@@ -41,9 +41,12 @@ import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
 import Data.Map
 import qualified Data.Map as Map
+import qualified Data.Map.Monoidal.Strict as MMap
 import Data.Matrix hiding (trace)
+import Data.Maybe (fromMaybe)
+import Data.Monoid (Endo (..), Sum (..))
 import qualified Data.Set as Set
-import Data.Vector (generate)
+import Data.Vector (Vector, generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
 import GHC.Generics (Generic)
