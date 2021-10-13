@@ -15,14 +15,10 @@
 {-# LANGUAGE TypeOperators #-}
 
 -- | A stochastic petri net is a petri net with rate constants for every transition.  See: https://math.ucr.edu/home/baez/structured_vs_decorated/structured_vs_decorated_companions_web.pdf
--- DONE?: This will be more efficient if we lean on linear algebra and use morphisms in VectK by building a "vector field representation"
--- of the transition matrix.  This amounts to building the representation of the graph in a matrix of edges and computing rates and updates using BLAS primatives.
--- See: https://github.com/AlgebraicJulia/AlgebraicPetri.jl/blob/91535bd5aea8b8bbc3de25d1c7b55071017c1801/src/AlgebraicPetri.jl#L256-L264
--- We can do this using HMatix if we don't care about cross compilation to JS or we can maybe use massiv if we do, tbd.
 module Petri.Stochastic
   ( toStochastic,
     runPetriMorphism,
-    foldMapNeighbors,
+    toPetriMorphism,
     toVectorField,
     sirNet,
     SIR (..),
@@ -35,13 +31,15 @@ import Algebra.Graph.AdjacencyMap
     edgeList,
     edges,
   )
-import Control.Monad.State.Strict (MonadState, execState, modify, runState)
+import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
-import Data.Map
+  ( Finitary (Cardinality, end, fromFinite, toFinite),
+    inhabitants,
+  )
+import Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Matrix hiding (trace)
-import qualified Data.Set as Set
+import Data.Matrix (Matrix, unsafeGet, unsafeSet, zero)
 import Data.Vector (generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
@@ -80,34 +78,6 @@ for = flip fmap
 -- | Debug prints
 debug :: c -> String -> c
 debug = flip trace
-
--- | This is like @foldMap@ except will walk our graph and bail once everything has been seen.
-foldMapNeighbors ::
-  (Ord p, Ord t, Show p, Show t) =>
-  AdjacencyMap (PetriNode p t) ->
-  Set.Set (PetriNode p t, PetriNode p t) ->
-  PetriNode p t ->
-  (PetriMorphism p b -> (PetriNode p t, PetriNode p t, PetriNode p t) -> PetriMorphism p b) ->
-  PetriMorphism p b
-foldMapNeighbors net' seen start f =
-  case Map.lookup start (adjacencyMap net') of
-    Nothing -> mempty
-    Just transitions -> foldMap (<> mempty) $
-      for (Set.toList transitions) $
-        \transition -> case Map.lookup transition (adjacencyMap net') of
-          Nothing -> mempty
-          Just targets -> foldMap (<> mempty) $
-            for (Set.toList targets) $ \target ->
-              if Set.member (start, target) seen
-                then mempty
-                else
-                  let recurse =
-                        foldMapNeighbors
-                          net'
-                          (Set.singleton (start, target) <> seen)
-                          target
-                          f
-                   in f recurse (start, transition, target)
 
 toStochastic ::
   (Ord p, Ord t) =>
@@ -153,25 +123,22 @@ sirEdges =
 -- >>> let r_1 = 0.02
 -- >>> let r_2 = 0.05
 -- >>> let kont = toPetriMorphism $sirNet r_1 r_2
--- >>> let inits = (Map.fromList $ [(S, Sum 0.99), (I, Sum 0.01), (R, 0)])
+-- >>> let inits = (Map.fromList $ [(S, 0.99), (I, 0.01), (R, 0)])
 -- >>> let t1 = runPetriMorphism kont inits
 -- >>> let t2 = runPetriMorphism kont (t1 <> inits)
 -- >>> let t3 = runPetriMorphism kont (t2 <> t1 <> inits)
 -- >>> show t1
 -- >>> show t2
 -- >>> show t3
-sirNet :: (Num r, Eq r) => r -> r -> Stochastic SIR R r
--- need to have Stochastic datatype take as field the rate function (rateFn)
--- test should pull the values required by toVectorField out
+sirNet :: r -> r -> Stochastic SIR R r
 sirNet r1 r2 = toStochastic rateFn sirEdges
   where
     rateFn R_1 = r1
     rateFn R_2 = r2
 
--- >>> test
--- MonoidalMap {getMonoidalMap = fromList [(S,Sum {getSum = -1.9602e-4}),(I,Sum {getSum = 1.8602e-4}),(R,Sum {getSum = 1.0e-5})]}
-test :: Map SIR Double
-test =
+-- >>> _test
+_test :: Map SIR Double
+_test =
   let testPetrinet = sirNet 0.02 0.05
       stochasticNet = net testPetrinet
       ratePart = rate testPetrinet
@@ -182,16 +149,19 @@ toPetriMorphism ::
   ( Floating r,
     Finitary p,
     Finitary t,
+    Show r,
+    Show t,
+    Show p,
     1 <= Cardinality p,
     1 <= Cardinality t,
     Ord p
   ) =>
   Stochastic p t r ->
   PetriMorphism p r
-toPetriMorphism pn = PetriMorphism $toVectorField (net pn) (rate pn)
+toPetriMorphism pn = PetriMorphism $ toVectorField (net pn) (rate pn)
 
-test2 :: Map SIR Double
-test2 =
+_test2 :: Map SIR Double
+_test2 =
   let testPetrinet = sirNet 0.02 0.05
    in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
 
@@ -202,9 +172,12 @@ data TransitionMatrices r = TransitionMatrices
   }
   deriving stock (Eq, Show, Generic)
 
+unsafeSet' :: a -> (Int, Int) -> Matrix a -> Matrix a
+unsafeSet' v (a, b) = unsafeSet v (a + 1, b + 1)
+
 -- | Is the Place serving as an input or output of the Transition?
 registerConnection ::
-  (Num r, MonadState (TransitionMatrices r) m, Finitary p, Finitary t) =>
+  (Num r, Show p, Show t, MonadState (TransitionMatrices r) m, Finitary p, Finitary t) =>
   (PetriNode p t, PetriNode p t) ->
   m ()
 registerConnection (Place source, Transition target) =
@@ -212,43 +185,52 @@ registerConnection (Place source, Transition target) =
     ( \st ->
         st
           { transitionMatricesInput =
-              unsafeSet
+              unsafeSet'
                 1
                 (fromIntegral $ toFinite source, fromIntegral $ toFinite target)
                 . transitionMatricesInput
                 $ st
           }
     )
+    `debug` show ("registerConnection: (Place source, Transition target)" <> show source <> " " <> show target)
 registerConnection (Transition source, Place target) =
   modify
     ( \st ->
         st
           { transitionMatricesOutput =
-              unsafeSet
+              unsafeSet'
                 1
-                ( fromIntegral $ toFinite source,
-                  fromIntegral $ toFinite target
+                ( fromIntegral $ toFinite target,
+                  fromIntegral $ toFinite source
                 )
                 . transitionMatricesOutput
                 $ st
           }
     )
+    `debug` show ("registerConnection: (Transition source, Place target)" <> show source <> " " <> show target)
 registerConnection _ = error "Invalid edge: places must alternate with transitions!" -- TODO: use throwM or expose safe API functions
 
 toTransitionMatrices ::
   forall r p t.
   ( Num r,
     Finitary p,
+    Show p,
+    Show t,
+    Show r,
     Finitary t,
     1 <= Cardinality p,
     1 <= Cardinality t
   ) =>
   AdjacencyMap (PetriNode p t) ->
   TransitionMatrices r
-toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
+toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros) `debug` ("toTransitionMatrices: " <> show zeros)
   where
     go = mconcat <$> traverse registerConnection (edgeList pn)
-    zeros = zero (fromIntegral $ toFinite @p end) (fromIntegral $ toFinite @t end)
+    zeros = zero ((1 +) . fromIntegral $ toFinite @p end) ((1 +) . fromIntegral $ toFinite @t end)
+
+-- | Converts 0 indexed values to 1 indexed values and then calles unsafeGet
+unsafeGet' :: Int -> Int -> Matrix a -> a
+unsafeGet' a b = unsafeGet (a + 1) (b + 1)
 
 -- | Yield a function that calculates the vectorfield of a StochasticNet with initial conditions at some time `t` for the given the network
 -- and rate function.  We use `Map`s here only for convience.
@@ -257,11 +239,15 @@ toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
 -- This implmentation is not optimized for performance though it uses @Vector@ under the hood.  We care
 -- more about portability at the momement and so use a pure Haskell implementation over using
 -- BLAS in `HMatrix`, `hasktorch`, or massiv.
+-- >>> fromIntegral . toFinite <$> inhabitants @SIR
 toVectorField ::
   forall r p t.
   ( Floating r,
+    Show r,
     Finitary p,
     Finitary t,
+    Show t,
+    Show p,
     1 <= Cardinality p,
     1 <= Cardinality t,
     Ord p
@@ -278,19 +264,19 @@ toVectorField pn rate' = du . currentRates
     forTransitions = for (inhabitants @t)
     toIdx f = f . (fromIntegral . toFinite)
     forTransitionIdx = forTransitions . toIdx
-    nTransitions = fromIntegral $ toFinite @t end
+    nTransitions = (1 +) . fromIntegral $ toFinite @t end
     -- calculate a vecotr of current rate coefficients of each transition given by rate * product of all inputs to that transition
     currentRates u =
       generate
         nTransitions
         ( \t_i ->
-            let transition = fromFinite @t (fromIntegral t_i)
+            let transition = fromFinite @t (fromIntegral t_i) `debug` show (fromFinite @t (fromIntegral t_i))
              in (rate' transition *) . product $
                   for (inhabitants @p) $
                     \place ->
-                      let s_i = fromIntegral $ toFinite place
-                          valAtS = u Map.! place
-                       in valAtS ** unsafeGet s_i t_i input -- will either valAtS ^ 1 or valAtS ^ 0
+                      let s_i = fromIntegral $ toFinite place `debug` show (place, transition, u)
+                          valAtS = u Map.! place `debug` show (s_i, t_i, input)
+                       in valAtS ** unsafeGet' s_i t_i input `debug` show (unsafeGet' s_i t_i input) -- will either valAtS ^ 1 or valAtS ^ 0
         )
     -- calculate the derivative of the initial states `u` by multiplying the rates against the values of the final transition matrix
     du rates =
@@ -300,6 +286,8 @@ toVectorField pn rate' = du . currentRates
               sum $
                 forTransitionIdx $
                   \t_i ->
-                    let s_i = (fromIntegral . toFinite $ place)
-                     in rates Vector.! t_i * unsafeGet s_i t_i dt
+                    let s_i = (fromIntegral . toFinite $ place) `debug` ("du rates: t_i " <> show t_i)
+                     in case rates Vector.!? t_i of
+                          Nothing -> error $ "case rates " <> show t_i
+                          Just r' -> r' * unsafeGet' s_i t_i dt `debug` ("du rates place: " <> show place)
           )
