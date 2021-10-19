@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -22,14 +21,16 @@ module Petri.Stochastic
     toVectorField,
     sirNet,
     SIR (..),
-    debug,
   )
 where
 
+import Algebra.Graph.Acyclic.AdjacencyMap (topSort)
+import Algebra.Graph.AdjacencyIntMap.Algorithm ()
 import Algebra.Graph.AdjacencyMap
   ( AdjacencyMap (..),
     edgeList,
     edges,
+    vertex,
   )
 import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
@@ -40,6 +41,8 @@ import Data.Finitary
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Matrix (Matrix, unsafeGet, unsafeSet, zero)
+import Data.Maybe (mapMaybe)
+import qualified Data.Set as Set
 import Data.Vector (generate)
 import qualified Data.Vector as Vector
 import Debug.Trace (trace)
@@ -72,12 +75,8 @@ newtype PetriMorphism p r = PetriMorphism
 runPetriMorphism :: PetriMorphism p b -> Map p b -> Map p b
 runPetriMorphism (PetriMorphism endo) = endo
 
-for :: [a] -> (a -> b) -> [b]
+for :: Functor f => f a -> (a -> b) -> f b
 for = flip fmap
-
--- | Debug prints
-debug :: c -> String -> c
-debug = flip trace
 
 toStochastic ::
   (Ord p, Ord t) =>
@@ -148,10 +147,8 @@ _test =
 toPetriMorphism ::
   ( Floating r,
     Finitary p,
-    Finitary t,
     Show r,
-    Show t,
-    Show p,
+    Finitary t,
     1 <= Cardinality p,
     1 <= Cardinality t,
     Ord p
@@ -163,7 +160,7 @@ toPetriMorphism pn = PetriMorphism $ toVectorField (net pn) (rate pn)
 _test2 :: Map SIR Double
 _test2 =
   let testPetrinet = sirNet 0.02 0.05
-   in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
+   in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 10), (I, 1), (R, 0)])
 
 -- | Encodes if the Place (row) is an input / output of the Transition (column)
 data TransitionMatrices r = TransitionMatrices
@@ -172,12 +169,16 @@ data TransitionMatrices r = TransitionMatrices
   }
   deriving stock (Eq, Show, Generic)
 
-unsafeSet' :: a -> (Int, Int) -> Matrix a -> Matrix a
-unsafeSet' v (a, b) = unsafeSet v (a + 1, b + 1)
+-- | unsafeSet using 0-indexed semantics
+unsafeSetZeroIndexed :: a -> (Int, Int) -> Matrix a -> Matrix a
+unsafeSetZeroIndexed v (a, b) = unsafeSet v (a + 1, b + 1)
+
+toFiniteNum :: forall i a. (Finitary i, Num a) => i -> a
+toFiniteNum = fromIntegral . toFinite
 
 -- | Is the Place serving as an input or output of the Transition?
 registerConnection ::
-  (Num r, Show p, Show t, MonadState (TransitionMatrices r) m, Finitary p, Finitary t) =>
+  (Num r, MonadState (TransitionMatrices r) m, Finitary p, Finitary t) =>
   (PetriNode p t, PetriNode p t) ->
   m ()
 registerConnection (Place source, Transition target) =
@@ -185,52 +186,53 @@ registerConnection (Place source, Transition target) =
     ( \st ->
         st
           { transitionMatricesInput =
-              unsafeSet'
+              unsafeSetZeroIndexed
                 1
-                (fromIntegral $ toFinite source, fromIntegral $ toFinite target)
+                ( toFiniteNum source,
+                  toFiniteNum target
+                )
                 . transitionMatricesInput
                 $ st
           }
     )
-    `debug` show ("registerConnection: (Place source, Transition target)" <> show source <> " " <> show target)
 registerConnection (Transition source, Place target) =
   modify
     ( \st ->
         st
           { transitionMatricesOutput =
-              unsafeSet'
+              unsafeSetZeroIndexed
                 1
-                ( fromIntegral $ toFinite target,
-                  fromIntegral $ toFinite source
+                ( toFiniteNum target,
+                  toFiniteNum source
                 )
                 . transitionMatricesOutput
                 $ st
           }
     )
-    `debug` show ("registerConnection: (Transition source, Place target)" <> show source <> " " <> show target)
 registerConnection _ = error "Invalid edge: places must alternate with transitions!" -- TODO: use throwM or expose safe API functions
 
 toTransitionMatrices ::
   forall r p t.
   ( Num r,
     Finitary p,
-    Show p,
-    Show t,
-    Show r,
     Finitary t,
     1 <= Cardinality p,
     1 <= Cardinality t
   ) =>
   AdjacencyMap (PetriNode p t) ->
   TransitionMatrices r
-toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros) `debug` ("toTransitionMatrices: " <> show zeros)
+toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
   where
     go = mconcat <$> traverse registerConnection (edgeList pn)
-    zeros = zero ((1 +) . fromIntegral $ toFinite @p end) ((1 +) . fromIntegral $ toFinite @t end)
+    zeros = zero ((1 +) $ toFiniteNum @p end) ((1 +) $ toFiniteNum @t end)
 
 -- | Converts 0 indexed values to 1 indexed values and then calles unsafeGet
-unsafeGet' :: Int -> Int -> Matrix a -> a
-unsafeGet' a b = unsafeGet (a + 1) (b + 1)
+unsafeGetZeroIndexed :: Int -> Int -> Matrix a -> a
+unsafeGetZeroIndexed a b = unsafeGet (a + 1) (b + 1)
+
+debug :: c -> String -> c
+debug = flip trace
+
 
 -- | Yield a function that calculates the vectorfield of a StochasticNet with initial conditions at some time `t` for the given the network
 -- and rate function.  We use `Map`s here only for convience.
@@ -278,16 +280,32 @@ toVectorField pn rate' = du . currentRates
                           valAtS = u Map.! place `debug` show (s_i, t_i, input)
                        in valAtS ** unsafeGet' s_i t_i input `debug` show (unsafeGet' s_i t_i input) -- will either valAtS ^ 1 or valAtS ^ 0
         )
+    currentRates u = v `debug` ("curentrate vector: " <> show v)
+      where
+        !v =
+          generate
+            nTransitions
+            ( \ridx ->
+                let !(source, target) = transitionEdges Vector.! ridx
+                    !t_i = toFiniteNum transition
+                 in (rate' transition *) . product $
+                      for places $
+                        \place ->
+                          let !s_i = toFiniteNum place
+                              !valAtS = u Map.! place
+                           in valAtS ** unsafeGetZeroIndexed s_i t_i input -- will either valAtS ^ 1 or valAtS ^ 0
+            )
     -- calculate the derivative of the initial states `u` by multiplying the rates against the values of the final transition matrix
-    du rates =
-      Map.fromList $
-        forPlaces
-          ( \place -> (place,) $
-              sum $
-                forTransitionIdx $
-                  \t_i ->
-                    let s_i = (fromIntegral . toFinite $ place) `debug` ("du rates: t_i " <> show t_i)
-                     in case rates Vector.!? t_i of
-                          Nothing -> error $ "case rates " <> show t_i
-                          Just r' -> r' * unsafeGet' s_i t_i dt `debug` ("du rates place: " <> show place)
-          )
+    du rates = m
+      where
+        !m =
+          Map.fromList $
+            forPlaces
+              ( \place -> (place,) $
+                  sum $
+                    forTransitions $
+                      \(transition, _) ->
+                        let !t_i = toFiniteNum transition
+                            !s_i = (fromIntegral . toFinite $ place)
+                         in (rates Vector.! t_i) * unsafeGetZeroIndexed s_i t_i dt
+              )
