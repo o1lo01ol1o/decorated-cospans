@@ -24,12 +24,7 @@ module Petri.Stochastic
   )
 where
 
-import Algebra.Graph.AdjacencyIntMap.Algorithm ()
-import Algebra.Graph.AdjacencyMap
-  ( AdjacencyMap (..),
-    edgeList,
-    edges,
-  )
+import Algebra.Graph.Labelled (Graph, edgeList, edges)
 import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
@@ -42,6 +37,7 @@ import Data.Matrix (Matrix, unsafeGet, unsafeSet, zero)
 import Data.Vector (generate)
 import qualified Data.Vector as Vector
 import GHC.Generics (Generic)
+import GHC.Num (Natural)
 import GHC.TypeNats (type (<=))
 
 -- | Nodes in the graph will either be Places or Transitions
@@ -52,9 +48,35 @@ instance Bifunctor PetriNode where
   bimap f _ (Place p) = Place $ f p
   bimap _ f (Transition p) = Transition $ f p
 
+-- | We only represent single edges in the Graph data structure but Petri nets may have multiple edges between nodes
+-- so we annotate the edge with a monoidal label that can tell us how many edges we deal with between a pair of vertices.
+data FiniteCount a = Zero | One | FiniteCount a
+  deriving stock (Eq, Ord, Functor, Show)
+
+getFiniteCount :: Num p => FiniteCount p -> p
+getFiniteCount Zero = 0
+getFiniteCount One = 1
+getFiniteCount (FiniteCount c) = c
+
+_isZero :: FiniteCount a -> Bool
+_isZero Zero = True
+_isZero _ = False
+
+instance Num a => Semigroup (FiniteCount a) where
+  Zero <> x = x
+  x <> Zero = x
+  One <> One = FiniteCount 2
+  One <> (FiniteCount c) = FiniteCount (c + 1)
+  (FiniteCount c) <> One = FiniteCount (c + 1)
+  (FiniteCount a) <> (FiniteCount b) = FiniteCount (a + b)
+
+instance Num a => Monoid (FiniteCount a) where
+  mempty = Zero
+  mappend = (<>)
+
 -- TODO:  It may in some cases also be defined by multiple edges between two nodes. Dunno what semanticcs are required here.
 data Stochastic p t r = Stochastic
-  { net :: AdjacencyMap (PetriNode p t),
+  { net :: Graph (FiniteCount Natural) (PetriNode p t),
     rate :: t -> r
   }
 
@@ -74,11 +96,12 @@ for :: Functor f => f a -> (a -> b) -> f b
 for = flip fmap
 
 toStochastic ::
-  (Ord p, Ord t) =>
   (t -> r) ->
   [(PetriNode p t, PetriNode p t)] ->
   Stochastic p t r
-toStochastic rateFn netEdges = Stochastic (edges netEdges) rateFn
+toStochastic rateFn specdEdges = Stochastic (edges netEdges) rateFn
+  where
+    netEdges = fmap (\(src, target) -> (One, src, target)) specdEdges
 
 -- | The SIR model
 data SIR = S | I | R
@@ -108,6 +131,7 @@ sirEdges :: [(PetriNode SIR R, PetriNode SIR R)]
 sirEdges =
   [ (s, r_1),
     (r_1, i),
+    (r_1, i),
     (i, r_1),
     (i, r_2),
     (r_2, r)
@@ -116,14 +140,8 @@ sirEdges =
 -- | Define a SIR model given two rates
 -- >>> let r_1 = 0.02
 -- >>> let r_2 = 0.05
--- >>> let kont = toPetriMorphism $sirNet r_1 r_2
--- >>> let inits = (Map.fromList $ [(S, 0.99), (I, 0.01), (R, 0)])
--- >>> let t1 = runPetriMorphism kont inits
--- >>> let t2 = runPetriMorphism kont (t1 <> inits)
--- >>> let t3 = runPetriMorphism kont (t2 <> t1 <> inits)
--- >>> show t1
--- >>> show t2
--- >>> show t3
+-- >>> show . edgeList . net $ sirNet r_1 r_2
+-- "[(One,Place S,Transition R_1),(One,Place I,Transition R_1),(One,Place I,Transition R_2),(FiniteCount 2,Transition R_1,Place I),(One,Transition R_2,Place R)]"
 sirNet :: r -> r -> Stochastic SIR R r
 sirNet r1 r2 = toStochastic rateFn sirEdges
   where
@@ -131,30 +149,24 @@ sirNet r1 r2 = toStochastic rateFn sirEdges
     rateFn R_2 = r2
 
 -- >>> _test
+-- fromList [(S,-0.2),(I,0.15000000000000002),(R,5.0e-2)]
 _test :: Map SIR Double
 _test =
   let testPetrinet = sirNet 0.02 0.05
-      stochasticNet = net testPetrinet
-      ratePart = rate testPetrinet
-      kont = toVectorField stochasticNet ratePart
-   in runPetriMorphism (PetriMorphism kont) (Map.fromList [(S, 0.99), (I, 0.01), (R, 0)])
+   in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 10), (I, 1), (R, 0)])
 
 toPetriMorphism ::
   ( Floating r,
     Finitary p,
     Finitary t,
+    Ord t,
+    Ord p,
     1 <= Cardinality p,
-    1 <= Cardinality t,
-    Ord p
+    1 <= Cardinality t
   ) =>
   Stochastic p t r ->
   PetriMorphism p r
 toPetriMorphism pn = PetriMorphism $ toVectorField (net pn) (rate pn)
-
-_test2 :: Map SIR Double
-_test2 =
-  let testPetrinet = sirNet 0.02 0.05
-   in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 10), (I, 1), (R, 0)])
 
 -- | Encodes if the Place (row) is an input / output of the Transition (column)
 data TransitionMatrices r = TransitionMatrices
@@ -173,15 +185,15 @@ toFiniteNum = fromIntegral . toFinite
 -- | Is the Place serving as an input or output of the Transition?
 registerConnection ::
   (Num r, MonadState (TransitionMatrices r) m, Finitary p, Finitary t) =>
-  (PetriNode p t, PetriNode p t) ->
+  (FiniteCount Natural, PetriNode p t, PetriNode p t) ->
   m ()
-registerConnection (Place source, Transition target) =
+registerConnection (count, Place source, Transition target) =
   modify
     ( \st ->
         st
           { transitionMatricesInput =
               unsafeSetZeroIndexed
-                1
+                (fromIntegral $ getFiniteCount count)
                 ( toFiniteNum source,
                   toFiniteNum target
                 )
@@ -189,13 +201,13 @@ registerConnection (Place source, Transition target) =
                 $ st
           }
     )
-registerConnection (Transition source, Place target) =
+registerConnection (count, Transition source, Place target) =
   modify
     ( \st ->
         st
           { transitionMatricesOutput =
               unsafeSetZeroIndexed
-                1
+                (fromIntegral $ getFiniteCount count)
                 ( toFiniteNum target,
                   toFiniteNum source
                 )
@@ -209,11 +221,13 @@ toTransitionMatrices ::
   forall r p t.
   ( Num r,
     Finitary p,
+    Ord p,
+    Ord t,
     Finitary t,
     1 <= Cardinality p,
     1 <= Cardinality t
   ) =>
-  AdjacencyMap (PetriNode p t) ->
+  Graph (FiniteCount Natural) (PetriNode p t) ->
   TransitionMatrices r
 toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
   where
@@ -236,11 +250,12 @@ toVectorField ::
   ( Floating r,
     Finitary p,
     Finitary t,
+    Ord t,
     1 <= Cardinality p,
     1 <= Cardinality t,
     Ord p
   ) =>
-  AdjacencyMap (PetriNode p t) ->
+  Graph (FiniteCount Natural) (PetriNode p t) ->
   (t -> r) ->
   (Map p r -> Map p r)
 toVectorField pn rate' = fun
