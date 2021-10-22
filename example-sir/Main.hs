@@ -17,7 +17,6 @@ import Numeric.GSL (odeSolve)
 import Numeric.LinearAlgebra (Matrix, Vector, fromColumns, linspace, toColumns, toList, toRows)
 import Petri.Stochastic
   ( SIR (I, R, S),
-    --- foldNeighborsEndo,
     runPetriMorphism,
     sirNet,
     toPetriMorphism,
