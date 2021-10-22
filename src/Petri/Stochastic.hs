@@ -24,13 +24,11 @@ module Petri.Stochastic
   )
 where
 
-import Algebra.Graph.Acyclic.AdjacencyMap (topSort)
 import Algebra.Graph.AdjacencyIntMap.Algorithm ()
 import Algebra.Graph.AdjacencyMap
   ( AdjacencyMap (..),
     edgeList,
     edges,
-    vertex,
   )
 import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
@@ -41,11 +39,8 @@ import Data.Finitary
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Matrix (Matrix, unsafeGet, unsafeSet, zero)
-import Data.Maybe (mapMaybe)
-import qualified Data.Set as Set
 import Data.Vector (generate)
 import qualified Data.Vector as Vector
-import Debug.Trace (trace)
 import GHC.Generics (Generic)
 import GHC.TypeNats (type (<=))
 
@@ -147,7 +142,6 @@ _test =
 toPetriMorphism ::
   ( Floating r,
     Finitary p,
-    Show r,
     Finitary t,
     1 <= Cardinality p,
     1 <= Cardinality t,
@@ -230,10 +224,6 @@ toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
 unsafeGetZeroIndexed :: Int -> Int -> Matrix a -> a
 unsafeGetZeroIndexed a b = unsafeGet (a + 1) (b + 1)
 
-debug :: c -> String -> c
-debug = flip trace
-
-
 -- | Yield a function that calculates the vectorfield of a StochasticNet with initial conditions at some time `t` for the given the network
 -- and rate function.  We use `Map`s here only for convience.
 -- See https://en.wikipedia.org/wiki/Petri_net#Formulation_in_terms_of_vectors_and_matrices
@@ -241,15 +231,11 @@ debug = flip trace
 -- This implmentation is not optimized for performance though it uses @Vector@ under the hood.  We care
 -- more about portability at the momement and so use a pure Haskell implementation over using
 -- BLAS in `HMatrix`, `hasktorch`, or massiv.
--- >>> fromIntegral . toFinite <$> inhabitants @SIR
 toVectorField ::
   forall r p t.
   ( Floating r,
-    Show r,
     Finitary p,
     Finitary t,
-    Show t,
-    Show p,
     1 <= Cardinality p,
     1 <= Cardinality t,
     Ord p
@@ -257,8 +243,9 @@ toVectorField ::
   AdjacencyMap (PetriNode p t) ->
   (t -> r) ->
   (Map p r -> Map p r)
-toVectorField pn rate' = du . currentRates
+toVectorField pn rate' = fun
   where
+    fun = du . currentRates
     -- auxiliary helpers
     (TransitionMatrices input output) = toTransitionMatrices pn
     dt = output - input
@@ -268,33 +255,21 @@ toVectorField pn rate' = du . currentRates
     forTransitionIdx = forTransitions . toIdx
     nTransitions = (1 +) . fromIntegral $ toFinite @t end
     -- calculate a vecotr of current rate coefficients of each transition given by rate * product of all inputs to that transition
-    currentRates u =
-      generate
-        nTransitions
-        ( \t_i ->
-            let transition = fromFinite @t (fromIntegral t_i) `debug` show (fromFinite @t (fromIntegral t_i))
-             in (rate' transition *) . product $
-                  for (inhabitants @p) $
-                    \place ->
-                      let s_i = fromIntegral $ toFinite place `debug` show (place, transition, u)
-                          valAtS = u Map.! place `debug` show (s_i, t_i, input)
-                       in valAtS ** unsafeGet' s_i t_i input `debug` show (unsafeGet' s_i t_i input) -- will either valAtS ^ 1 or valAtS ^ 0
-        )
-    currentRates u = v `debug` ("curentrate vector: " <> show v)
+    currentRates u = rateVec
       where
-        !v =
+        !rateVec =
           generate
             nTransitions
-            ( \ridx ->
-                let !(source, target) = transitionEdges Vector.! ridx
-                    !t_i = toFiniteNum transition
+            ( \t_i ->
+                let transition = fromFinite @t (fromIntegral t_i)
                  in (rate' transition *) . product $
-                      for places $
+                      for (inhabitants @p) $
                         \place ->
-                          let !s_i = toFiniteNum place
-                              !valAtS = u Map.! place
+                          let s_i = fromIntegral $ toFinite place
+                              valAtS = u Map.! place
                            in valAtS ** unsafeGetZeroIndexed s_i t_i input -- will either valAtS ^ 1 or valAtS ^ 0
             )
+
     -- calculate the derivative of the initial states `u` by multiplying the rates against the values of the final transition matrix
     du rates = m
       where
@@ -303,9 +278,8 @@ toVectorField pn rate' = du . currentRates
             forPlaces
               ( \place -> (place,) $
                   sum $
-                    forTransitions $
-                      \(transition, _) ->
-                        let !t_i = toFiniteNum transition
-                            !s_i = (fromIntegral . toFinite $ place)
+                    forTransitionIdx $
+                      \t_i ->
+                        let !s_i = (fromIntegral . toFinite $ place)
                          in (rates Vector.! t_i) * unsafeGetZeroIndexed s_i t_i dt
               )
