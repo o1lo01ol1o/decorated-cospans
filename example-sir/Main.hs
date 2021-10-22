@@ -23,13 +23,13 @@ import Petri.Stochastic
   )
 
 ts :: Vector Double
-ts = linspace 400 (0, 100 :: Double)
+ts = linspace 400 (0, 1000 :: Double)
 
 -- FD TODO will be necessary to pass map rather than monoidal map to sirMorphism
 sol :: Matrix Double
 sol = odeSolve sirODE [0.99, 0.01, 0] ts
   where
-    sirMorphism = toPetriMorphism (sirNet (0.4 :: Double) 0.4)
+    sirMorphism = toPetriMorphism (sirNet (0.04 :: Double) 0.02)
     sirODE _ [s, i, r] =
       let result = runPetriMorphism sirMorphism (M.fromList [(S, s), (I, i), (R, r)])
        in [result M.! S, result M.! I, result M.! R]
