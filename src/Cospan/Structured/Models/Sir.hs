@@ -9,9 +9,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Cospan.Models.Sir where
+module Cospan.Structured.Models.Sir where
 
-import Cospan ( OpenStochastic, Cospan(Cospan), composeH )
+import Cospan.Structured ( OpenStochastic, composeH, StructuredCospan (StructuredCospan) )
 import Data.Finitary (Finitary (Cardinality))
 import Data.Map (Map)
 import Data.These (These)
@@ -30,7 +30,7 @@ openSirNet ::
   r ->
   r ->
   OpenStochastic SIR R r
-openSirNet r1 r2 = Cospan (sirNet r1 r2) (const [S]) (const [S, I, R])
+openSirNet r1 r2 = StructuredCospan (sirNet r1 r2) (const [S]) (const [S, I, R])
 
 data Rm = MortalityRate | AntibodyDecay
   deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
@@ -72,7 +72,7 @@ sirReinfectionWithMortality im rir = toStochastic rateFn sirrmEdges
 
 openSirReinfectionWithMortality :: r -> r -> OpenStochastic SIRM Rm r
 openSirReinfectionWithMortality im rir =
-  Cospan
+  StructuredCospan
     (sirReinfectionWithMortality im rir)
     (const [S', I', R'])
     (const [S', I', R', M'])
