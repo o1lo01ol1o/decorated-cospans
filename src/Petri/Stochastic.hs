@@ -19,6 +19,7 @@ module Petri.Stochastic
     runPetriMorphism,
     toPetriMorphism,
     toVectorField,
+    FiniteCount,
     sirNet,
     PetriNode,
     Stochastic (..),
@@ -26,7 +27,7 @@ module Petri.Stochastic
   )
 where
 
-import Algebra.Graph.Labelled (Graph, edgeList, edges)
+import Algebra.Graph.Labelled.AdjacencyMap (AdjacencyMap, edgeList, edges)
 import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
@@ -78,7 +79,7 @@ instance Num a => Monoid (FiniteCount a) where
 
 -- TODO:  It may in some cases also be defined by multiple edges between two nodes. Dunno what semanticcs are required here.
 data Stochastic p t r = Stochastic
-  { net :: Graph (FiniteCount Natural) (PetriNode p t),
+  { net :: AdjacencyMap (FiniteCount Natural) (PetriNode p t),
     rate :: t -> r
   }
 
@@ -98,6 +99,7 @@ for :: Functor f => f a -> (a -> b) -> f b
 for = flip fmap
 
 toStochastic ::
+  (Ord p, Ord t) =>
   (t -> r) ->
   [(PetriNode p t, PetriNode p t)] ->
   Stochastic p t r
@@ -161,7 +163,6 @@ toPetriMorphism ::
   ( Floating r,
     Finitary p,
     Finitary t,
-    Ord t,
     Ord p,
     1 <= Cardinality p,
     1 <= Cardinality t
@@ -223,13 +224,11 @@ toTransitionMatrices ::
   forall r p t.
   ( Num r,
     Finitary p,
-    Ord p,
-    Ord t,
     Finitary t,
     1 <= Cardinality p,
     1 <= Cardinality t
   ) =>
-  Graph (FiniteCount Natural) (PetriNode p t) ->
+  AdjacencyMap (FiniteCount Natural) (PetriNode p t) ->
   TransitionMatrices r
 toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
   where
@@ -252,12 +251,11 @@ toVectorField ::
   ( Floating r,
     Finitary p,
     Finitary t,
-    Ord t,
     1 <= Cardinality p,
     1 <= Cardinality t,
     Ord p
   ) =>
-  Graph (FiniteCount Natural) (PetriNode p t) ->
+  AdjacencyMap (FiniteCount Natural) (PetriNode p t) ->
   (t -> r) ->
   (Map p r -> Map p r)
 toVectorField pn rate' = fun
