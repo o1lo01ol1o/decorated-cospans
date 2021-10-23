@@ -1,6 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingVia #-}
@@ -20,14 +19,18 @@ module Petri.Stochastic
     toPetriMorphism,
     toVectorField,
     FiniteCount,
-    sirNet,
     PetriNode,
+    PetriMorphism,
     Stochastic (..),
-    SIR (..),
+    place,
+    netEdgeList,
+    transition,
+    zeroStates,
   )
 where
 
-import Algebra.Graph.Labelled.AdjacencyMap (AdjacencyMap, edgeList, edges)
+import Algebra.Graph.Labelled.AdjacencyMap (AdjacencyMap, edges)
+import qualified Algebra.Graph.Labelled.AdjacencyMap as AM
 import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
 import Data.Finitary
@@ -47,9 +50,18 @@ import GHC.TypeNats (type (<=))
 data PetriNode p t = Place p | Transition t
   deriving stock (Eq, Ord, Show, Generic, Functor, Foldable, Traversable)
 
+place :: p -> PetriNode p t
+place = Place
+
+transition :: t -> PetriNode p t
+transition = Transition
+
 instance Bifunctor PetriNode where
   bimap f _ (Place p) = Place $ f p
   bimap _ f (Transition p) = Transition $ f p
+
+zeroStates :: forall p r. (Num r, Ord p, Finitary p) => Map p r
+zeroStates = Map.fromList $ fmap (,0) $ inhabitants @p
 
 -- | We only represent single edges in the Graph data structure but Petri nets may have multiple edges between nodes
 -- so we annotate the edge with a monoidal label that can tell us how many edges we deal with between a pair of vertices.
@@ -83,6 +95,11 @@ data Stochastic p t r = Stochastic
     rate :: t -> r
   }
 
+netEdgeList ::
+  Stochastic p t r ->
+  [(FiniteCount Natural, PetriNode p t, PetriNode p t)]
+netEdgeList = AM.edgeList . net
+
 newtype PetriMorphism p r = PetriMorphism
   { unPetriMorphism ::
       Map p r ->
@@ -106,58 +123,6 @@ toStochastic ::
 toStochastic rateFn specdEdges = Stochastic (edges netEdges) rateFn
   where
     netEdges = fmap (\(src, target) -> (One, src, target)) specdEdges
-
--- | The SIR model
-data SIR = S | I | R
-  deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
-  deriving anyclass (Finitary)
-
-s :: PetriNode SIR t
-s = Place S
-
-i :: PetriNode SIR t
-i = Place I
-
-r :: PetriNode SIR t
-r = Place R
-
-data R = R_1 | R_2
-  deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
-  deriving anyclass (Finitary)
-
-r_1 :: PetriNode p R
-r_1 = Transition R_1
-
-r_2 :: PetriNode p R
-r_2 = Transition R_2
-
-sirEdges :: [(PetriNode SIR R, PetriNode SIR R)]
-sirEdges =
-  [ (s, r_1),
-    (r_1, i),
-    (r_1, i),
-    (i, r_1),
-    (i, r_2),
-    (r_2, r)
-  ]
-
--- | Define a SIR model given two rates
--- >>> let r_1 = 0.02
--- >>> let r_2 = 0.05
--- >>> show . edgeList . net $ sirNet r_1 r_2
--- "[(One,Place S,Transition R_1),(One,Place I,Transition R_1),(One,Place I,Transition R_2),(FiniteCount 2,Transition R_1,Place I),(One,Transition R_2,Place R)]"
-sirNet :: r -> r -> Stochastic SIR R r
-sirNet r1 r2 = toStochastic rateFn sirEdges
-  where
-    rateFn R_1 = r1
-    rateFn R_2 = r2
-
--- >>> _test
--- fromList [(S,-0.2),(I,0.15000000000000002),(R,5.0e-2)]
-_test :: Map SIR Double
-_test =
-  let testPetrinet = sirNet 0.02 0.05
-   in runPetriMorphism (toPetriMorphism testPetrinet) (Map.fromList [(S, 10), (I, 1), (R, 0)])
 
 toPetriMorphism ::
   ( Floating r,
@@ -232,7 +197,7 @@ toTransitionMatrices ::
   TransitionMatrices r
 toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
   where
-    go = mconcat <$> traverse registerConnection (edgeList pn)
+    go = mconcat <$> traverse registerConnection (AM.edgeList pn)
     zeros = zero ((1 +) $ toFiniteNum @p end) ((1 +) $ toFiniteNum @t end)
 
 -- | Converts 0 indexed values to 1 indexed values and then calles unsafeGet
