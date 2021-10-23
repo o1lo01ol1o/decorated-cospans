@@ -11,14 +11,20 @@
 
 module Cospan.Models.Sir where
 
-import Cospan
+import Cospan ( OpenStochastic, Cospan(Cospan), composeH )
 import Data.Finitary (Finitary (Cardinality))
 import Data.Map (Map)
 import Data.These (These)
 import GHC.Generics (Generic)
 import GHC.TypeNats (KnownNat, type (+), type (*))
-import Petri.Models.Sir
+import Petri.Models.Sir ( R, SIR(..), sirNet )
 import Petri.Stochastic
+    ( Stochastic,
+      PetriNode,
+      toStochastic,
+      place,
+      transition,
+      zeroStates )
 
 openSirNet ::
   r ->
