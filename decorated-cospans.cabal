@@ -56,7 +56,10 @@ library
   import:          common-options
   hs-source-dirs:  src
   exposed-modules:
+    Cospan
+    Cospan.Models.Sir
     Petri
+    Petri.Models.Sir
     Petri.Stochastic
 
 test-suite decorated-cospans-test

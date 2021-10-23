@@ -7,33 +7,49 @@
 
 module Main where
 
+import Cospan (toOpenPetriMorphism)
+import Cospan.Models.Sir
 import qualified Data.Map as M
+import Data.Maybe (mapMaybe)
 import Data.String.Here (here)
 import qualified Data.Text as T
+import Data.These
 import Graphics.Vega.VegaLite (dataFromRows, dataRow)
 import qualified Graphics.Vega.VegaLite as V
 import qualified Knit.Report as K
 import Numeric.GSL (odeSolve)
 import Numeric.LinearAlgebra (Matrix, Vector, fromColumns, linspace, toColumns, toList, toRows)
-import Petri.Stochastic
+import Petri.Models.Sir
   ( SIR (I, R, S),
-    runPetriMorphism,
     sirNet,
-    toPetriMorphism,
   )
+import Petri.Stochastic (runPetriMorphism, toPetriMorphism, zeroStates)
 
 ts :: Vector Double
 ts = linspace 400 (0, 1000 :: Double)
 
--- FD TODO will be necessary to pass map rather than monoidal map to sirMorphism
-sol :: Matrix Double
-sol = odeSolve sirODE [0.99, 0.01, 0] ts
+sirSol :: Matrix Double
+sirSol = odeSolve sirODE [0.99, 0.01, 0] ts
   where
     sirMorphism = toPetriMorphism (sirNet (0.04 :: Double) 0.02)
     sirODE _ [s, i, r] =
       let result = runPetriMorphism sirMorphism (M.fromList [(S, s), (I, i), (R, r)])
        in [result M.! S, result M.! I, result M.! R]
     sirODE _ _ = error "Impossible."
+
+openSirSol :: Matrix Double
+openSirSol = odeSolve openSirODE initStates ts
+  where
+    openSirMorphism = toOpenPetriMorphism $ gluedSir (0.04 :: Double) 0.02 0.005 0.009
+    ascKeys = fst <$> M.toAscList zeroStates
+    initStates =
+      fmap snd . M.toAscList
+        . M.update (const $ Just 0.01) (These I I')
+        . M.update (const $ Just 0.99) (These S S')
+        $ zeroStates
+    openSirODE _ sts =
+      let result = runPetriMorphism openSirMorphism . M.fromList $ zip ascKeys sts
+       in snd <$> M.toAscList result
 
 templateVars :: M.Map String String
 templateVars =
@@ -84,6 +100,7 @@ makeDoc = K.wrapPrefix "makeDoc" $ do
   K.addMarkDown
     "## Example HVega visualization."
   _ <- K.addHvega Nothing (Just "The SIR model") sirVis
+  _ <- K.addHvega Nothing (Just "The (Glued) SIRM model") openSirVis
   pure ()
 
 -- example using HVega
@@ -111,4 +128,43 @@ sirVis =
         . dataRow [("Time", V.Number t), ("Population", V.Number r), ("Place", V.Str "R")]
     makeRow _ = error "Impossible"
     dataRows = dataFromRows [] . foldl1 (.) data' $ []
-    data' = fmap (makeRow . toList) . toRows . fromColumns $ ts : toColumns sol
+    data' = fmap (makeRow . toList) . toRows . fromColumns $ ts : toColumns sirSol
+
+openSirVis :: V.VegaLite
+openSirVis =
+  let enc =
+        V.encoding
+          . V.position V.X [V.PName "Time", V.PmType V.Temporal]
+          . V.position V.Y [V.PName "Population", V.PmType V.Quantitative]
+          . V.color [V.MName "Place", V.MmType V.Nominal]
+      bkg = V.background "rgba(0, 0, 0, 0.01)"
+   in V.toVegaLite
+        [ bkg,
+          dataRows,
+          V.mark V.Line [],
+          enc [],
+          V.height 640,
+          V.width 960,
+          V.autosize [V.AFit, V.APadding, V.AResize]
+        ]
+  where
+    makeRow m =
+      let t = m M.! Nothing
+          i = m M.! Just (These I I')
+          r = m M.! Just (These R R')
+          s = m M.! Just (These S S')
+          d = m M.! Just (That M')
+       in dataRow [("Time", V.Number t), ("Population", V.Number s), ("Place", V.Str "Susceptible")]
+            . dataRow [("Time", V.Number t), ("Population", V.Number i), ("Place", V.Str "Infected")]
+            . dataRow [("Time", V.Number t), ("Population", V.Number r), ("Place", V.Str "Recoverd")]
+            . dataRow [("Time", V.Number t), ("Population", V.Number d), ("Place", V.Str "Dead")]
+    ascKeys = Just . fst <$> M.toAscList (zeroStates :: M.Map (These SIR SIRM) Integer)
+    selectColumn c@(Nothing, _) = Just c
+    selectColumn c@(Just (These S S'), _) = Just c
+    selectColumn c@(Just (These I I'), _) = Just c
+    selectColumn c@(Just (These R R'), _) = Just c
+    selectColumn c@(Just (That M'), _) = Just c
+    selectColumn _ = Nothing
+    selectedColumns = M.toAscList . M.fromList . mapMaybe selectColumn $ zip (Nothing : ascKeys) (ts : toColumns openSirSol)
+    dataRows = dataFromRows [] . foldl1 (.) data' $ []
+    data' = fmap (makeRow . M.fromList . zip (fmap fst selectedColumns) . toList) . toRows . fromColumns . fmap snd $ selectedColumns

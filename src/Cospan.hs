@@ -1,20 +1,25 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Cospan where
 
 import Algebra.Graph.Labelled.AdjacencyMap (AdjacencyMap, gmap, overlay)
 import Data.Biapplicative (Bifunctor)
 import Data.Bifunctor (Bifunctor (bimap, first))
+import Data.Finitary (Finitary (Cardinality))
 import Data.List (nub)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.These (These (..))
 import GHC.Generics (Generic)
-import Petri.Stochastic (PetriNode, Stochastic (Stochastic))
+import GHC.TypeNats (type (<=))
+import Petri.Stochastic (PetriMorphism, PetriNode, Stochastic (Stochastic), toPetriMorphism)
 
 -- | A Cospan `x` is just the apex x and
 -- functions to pick out the inputs and outputs at the boundary of `x`
@@ -30,6 +35,18 @@ data Cospan x y z = Cospan
 
 -- | An OpenStochastic net is a petri net with two "legs" that form its inputs and outputs.
 type OpenStochastic p t r = Cospan (Stochastic p t r) [p] [p]
+
+toOpenPetriMorphism ::
+  ( Floating r,
+    Finitary p,
+    Finitary t,
+    Ord p,
+    1 <= Cardinality p,
+    1 <= Cardinality t
+  ) =>
+  OpenStochastic p t r ->
+  PetriMorphism p r
+toOpenPetriMorphism = toPetriMorphism . apex
 
 -- | Merge places given two maps of places that should be merge and the union of Either place.
 mergePlaces :: (Ord p', Ord p) => Map p p' -> Map p' p -> Either p p' -> These p p'
