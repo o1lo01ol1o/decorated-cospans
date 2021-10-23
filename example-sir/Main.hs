@@ -7,8 +7,8 @@
 
 module Main where
 
-import Cospan (toOpenPetriMorphism)
-import Cospan.Models.Sir
+import Cospan.Structured (toOpenPetriMorphism)
+import Cospan.Structured.Models.Sir
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.String.Here (here)

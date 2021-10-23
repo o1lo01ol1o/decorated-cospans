@@ -56,8 +56,8 @@ library
   import:          common-options
   hs-source-dirs:  src
   exposed-modules:
-    Cospan
-    Cospan.Models.Sir
+    Cospan.Structured
+    Cospan.Structured.Models.Sir
     Petri
     Petri.Models.Sir
     Petri.Stochastic
