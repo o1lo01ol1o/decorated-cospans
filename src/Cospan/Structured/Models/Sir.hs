@@ -1,30 +1,25 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Cospan.Structured.Models.Sir where
 
-import Cospan.Structured ( OpenStochastic, composeH, StructuredCospan (StructuredCospan) )
-import Data.Finitary (Finitary (Cardinality))
+import Cospan.Structured (OpenStochastic, StructuredCospan (StructuredCospan, apex), composeH)
 import Data.Map (Map)
 import Data.These (These)
 import GHC.Generics (Generic)
-import GHC.TypeNats (KnownNat, type (+), type (*))
-import Petri.Models.Sir ( R, SIR(..), sirNet )
+import Petri.Models.Sir (R, SIR (..), sirNet)
 import Petri.Stochastic
-    ( Stochastic,
-      PetriNode,
-      toStochastic,
-      place,
-      transition,
-      zeroStates )
+  ( PetriNode,
+    Stochastic (net),
+    place,
+    toStochastic,
+    transition,
+    zeroStates,
+  )
 
 openSirNet ::
   r ->
@@ -34,11 +29,9 @@ openSirNet r1 r2 = StructuredCospan (sirNet r1 r2) (const [S]) (const [S, I, R])
 
 data Rm = MortalityRate | AntibodyDecay
   deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
-  deriving anyclass (Finitary)
 
 data SIRM = M' | S' | I' | R'
   deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
-  deriving anyclass (Finitary)
 
 r' :: PetriNode SIRM t
 r' = place R'
@@ -93,28 +86,7 @@ gluedSir r1 r2 im rir = composeH glue (openSirNet r1 r2) (openSirReinfectionWith
         (R, R')
       ]
 
-deriving anyclass instance
-  ( Eq a,
-    Eq b,
-    Finitary a,
-    Finitary b,
-    KnownNat
-      ( Cardinality a
-          + ( Cardinality b
-                + ( ( Cardinality
-                        a
-                    )
-                      *
-                      ( Cardinality
-                          b
-                      )
-                  )
-            )
-      )
-  ) =>
-  Finitary (These a b)
-
 -- >>> show initialStates
--- "fromList [(This S,0),(This I,0),(This R,0),(That M',0),(That S',0),(That I',0),(That R',0),(These S M',0),(These S S',0),(These S I',0),(These S R',0),(These I M',0),(These I S',0),(These I I',0),(These I R',0),(These R M',0),(These R S',0),(These R I',0),(These R R',0)]"
+-- "fromList [(That M',0),(These S S',0),(These I I',0),(These R R',0)]"
 initialStates :: Num r => Map (These SIR SIRM) r
-initialStates = zeroStates @(These SIR SIRM)
+initialStates = zeroStates . net . apex $ gluedSir 0 0 0 0

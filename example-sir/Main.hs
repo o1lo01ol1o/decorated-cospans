@@ -9,11 +9,15 @@ module Main where
 
 import Cospan.Structured (toOpenPetriMorphism)
 import Cospan.Structured.Models.Sir
+  ( SIRM (I', M', R', S'),
+    gluedSir,
+    initialStates,
+  )
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.String.Here (here)
 import qualified Data.Text as T
-import Data.These
+import Data.These (These (That, These))
 import Graphics.Vega.VegaLite (dataFromRows, dataRow)
 import qualified Graphics.Vega.VegaLite as V
 import qualified Knit.Report as K
@@ -41,12 +45,12 @@ openSirSol :: Matrix Double
 openSirSol = odeSolve openSirODE initStates ts
   where
     openSirMorphism = toOpenPetriMorphism $ gluedSir (0.04 :: Double) 0.02 0.005 0.009
-    ascKeys = fst <$> M.toAscList zeroStates
+    ascKeys = fst <$> M.toAscList initialStates
     initStates =
       fmap snd . M.toAscList
         . M.update (const $ Just 0.01) (These I I')
         . M.update (const $ Just 0.99) (These S S')
-        $ zeroStates
+        $ initialStates
     openSirODE _ sts =
       let result = runPetriMorphism openSirMorphism . M.fromList $ zip ascKeys sts
        in snd <$> M.toAscList result
@@ -158,7 +162,7 @@ openSirVis =
             . dataRow [("Time", V.Number t), ("Population", V.Number i), ("Place", V.Str "Infected")]
             . dataRow [("Time", V.Number t), ("Population", V.Number r), ("Place", V.Str "Recoverd")]
             . dataRow [("Time", V.Number t), ("Population", V.Number d), ("Place", V.Str "Dead")]
-    ascKeys = Just . fst <$> M.toAscList (zeroStates :: M.Map (These SIR SIRM) Integer)
+    ascKeys = Just . fst <$> M.toAscList initialStates
     selectColumn c@(Nothing, _) = Just c
     selectColumn c@(Just (These S S'), _) = Just c
     selectColumn c@(Just (These I I'), _) = Just c
