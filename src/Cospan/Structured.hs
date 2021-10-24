@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -7,14 +6,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Cospan.Structured where
 
 import Algebra.Graph.Labelled.AdjacencyMap (AdjacencyMap, gmap, overlay)
 import Data.Biapplicative (Bifunctor)
 import Data.Bifunctor (Bifunctor (bimap, first))
-import Data.Finitary (Finitary (Cardinality))
 import Data.List (nub)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -22,7 +19,6 @@ import qualified Data.Set as Set
 import Data.These (These (..))
 import GHC.Generics (Generic)
 import GHC.Num (Natural)
-import GHC.TypeNats (type (<=))
 import Petri.Stochastic (FiniteCount, PetriMorphism, PetriNode, Stochastic (Stochastic, net, rate), toPetriMorphism)
 
 -- | A StructuredCospan `x` is just the apex x and
@@ -42,11 +38,8 @@ type OpenStochastic p t r = StructuredCospan (Stochastic p t r) [p] [p]
 
 toOpenPetriMorphism ::
   ( Floating r,
-    Finitary p,
-    Finitary t,
     Ord p,
-    1 <= Cardinality p,
-    1 <= Cardinality t
+    Ord t
   ) =>
   OpenStochastic p t r ->
   PetriMorphism p r
@@ -187,8 +180,8 @@ composeH toMerge l@(StructuredCospan apeL _ oL) r@(StructuredCospan apeR iR _) =
     toMerge' = filter (`Set.member` mergeSet) $ zip (oL apeL) (iR apeR)
     mp = Map.fromList toMerge
     mp' = Map.fromList $ fmap (\(a, b) -> (b, a)) toMerge'
-    howToMergePlaces = mergePlaces mp mp'
-    netPushForward = gmap @_ @_ @(PetriNode (These p p') (Either t t')) (first howToMergePlaces) (composeNetV l r) -- Not certain that gmap will do the right thing when keys suddenly end up the same (need to mappendd the value)
+    placesToMerge = mergePlaces mp mp'
+    netPushForward = gmap @_ @_ @(PetriNode (These p p') (Either t t')) (first placesToMerge) (composeNetV l r) -- Not certain that gmap will do the right thing when keys suddenly end up the same (need to mappendd the value)
     rateC = ratePushforward l r
-    iPushForward = inputLegPushforward howToMergePlaces l r
-    oPushForward = outputLegPushforward howToMergePlaces l r
+    iPushForward = inputLegPushforward placesToMerge l r
+    oPushForward = outputLegPushforward placesToMerge l r

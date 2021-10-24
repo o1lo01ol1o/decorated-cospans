@@ -10,7 +10,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators #-}
 
 -- | A stochastic petri net is a petri net with rate constants for every transition.  See: https://math.ucr.edu/home/baez/structured_vs_decorated/structured_vs_decorated_companions_web.pdf
 module Petri.Stochastic
@@ -29,22 +28,19 @@ module Petri.Stochastic
   )
 where
 
-import Algebra.Graph.Labelled.AdjacencyMap (AdjacencyMap, edges)
+import Algebra.Graph.Labelled.AdjacencyMap (AdjacencyMap, edges, vertexSet)
 import qualified Algebra.Graph.Labelled.AdjacencyMap as AM
 import Control.Monad.State.Strict (MonadState, execState, modify)
 import Data.Bifunctor (Bifunctor (bimap))
-import Data.Finitary
-  ( Finitary (Cardinality, end, fromFinite, toFinite),
-    inhabitants,
-  )
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Matrix (Matrix, unsafeGet, unsafeSet, zero)
+import Data.Maybe (mapMaybe)
+import qualified Data.Set as Set
 import Data.Vector (generate)
 import qualified Data.Vector as Vector
 import GHC.Generics (Generic)
 import GHC.Num (Natural)
-import GHC.TypeNats (type (<=))
 
 -- | Nodes in the graph will either be Places or Transitions
 data PetriNode p t = Place p | Transition t
@@ -60,8 +56,8 @@ instance Bifunctor PetriNode where
   bimap f _ (Place p) = Place $ f p
   bimap _ f (Transition p) = Transition $ f p
 
-zeroStates :: forall p r. (Num r, Ord p, Finitary p) => Map p r
-zeroStates = Map.fromList $ fmap (,0) $ inhabitants @p
+zeroStates :: (Num r, Ord p) => AdjacencyMap e (PetriNode p t) -> Map p r
+zeroStates = Map.fromList . fmap (,0) . getPlaces
 
 -- | We only represent single edges in the Graph data structure but Petri nets may have multiple edges between nodes
 -- so we annotate the edge with a monoidal label that can tell us how many edges we deal with between a pair of vertices.
@@ -126,11 +122,8 @@ toStochastic rateFn specdEdges = Stochastic (edges netEdges) rateFn
 
 toPetriMorphism ::
   ( Floating r,
-    Finitary p,
-    Finitary t,
     Ord p,
-    1 <= Cardinality p,
-    1 <= Cardinality t
+    Ord t
   ) =>
   Stochastic p t r ->
   PetriMorphism p r
@@ -147,58 +140,83 @@ data TransitionMatrices r = TransitionMatrices
 unsafeSetZeroIndexed :: a -> (Int, Int) -> Matrix a -> Matrix a
 unsafeSetZeroIndexed v (a, b) = unsafeSet v (a + 1, b + 1)
 
-toFiniteNum :: forall i a. (Finitary i, Num a) => i -> a
-toFiniteNum = fromIntegral . toFinite
-
 -- | Is the Place serving as an input or output of the Transition?
 registerConnection ::
-  (Num r, MonadState (TransitionMatrices r) m, Finitary p, Finitary t) =>
+  (Num r, Ord p, Ord t, MonadState (TransitionMatrices r) m) =>
+  (Map p Int, Map t Int) ->
   (FiniteCount Natural, PetriNode p t, PetriNode p t) ->
   m ()
-registerConnection (count, Place source, Transition target) =
+registerConnection (p2i, t2i) (count, Place source, Transition target) =
   modify
     ( \st ->
         st
           { transitionMatricesInput =
               unsafeSetZeroIndexed
                 (fromIntegral $ getFiniteCount count)
-                ( toFiniteNum source,
-                  toFiniteNum target
+                ( p2i Map.! source,
+                  t2i Map.! target
                 )
                 . transitionMatricesInput
                 $ st
           }
     )
-registerConnection (count, Transition source, Place target) =
+registerConnection (p2i, t2i) (count, Transition source, Place target) =
   modify
     ( \st ->
         st
           { transitionMatricesOutput =
               unsafeSetZeroIndexed
                 (fromIntegral $ getFiniteCount count)
-                ( toFiniteNum target,
-                  toFiniteNum source
+                ( p2i Map.! target,
+                  t2i Map.! source
                 )
                 . transitionMatricesOutput
                 $ st
           }
     )
-registerConnection _ = error "Invalid edge: places must alternate with transitions!" -- TODO: use throwM or expose safe API functions
+registerConnection _ _ = error "Invalid edge: places must alternate with transitions!" -- TODO: use throwM or expose safe API functions
+
+justTransitions :: PetriNode p a -> Maybe a
+justTransitions (Transition t) = Just t
+justTransitions _ = Nothing
+
+justPlaces :: PetriNode a t -> Maybe a
+justPlaces (Place p) = Just p
+justPlaces _ = Nothing
+
+getTransitions :: AdjacencyMap (FiniteCount Natural) (PetriNode p t) -> [t]
+getTransitions = getNode justTransitions
+
+getPlaces :: AdjacencyMap e (PetriNode b t) -> [b]
+getPlaces = getNode justPlaces
+
+getNode :: (a -> Maybe b) -> AdjacencyMap e a -> [b]
+getNode f = mapMaybe f . Set.toList . vertexSet
+
+switchMap :: Map a Int -> Map Int a
+switchMap = Map.fromList . fmap (\(a, b) -> (b, a)) . Map.toList
+
+idxMap :: Ord k => [k] -> Map k Int
+idxMap i = Map.fromList $ zip i [0 :: Int ..]
+
+idxMaps :: Ord a => [a] -> (Map a Int, Map Int a)
+idxMaps i = (a, b)
+  where
+    a = idxMap i
+    b = switchMap a
 
 toTransitionMatrices ::
   forall r p t.
-  ( Num r,
-    Finitary p,
-    Finitary t,
-    1 <= Cardinality p,
-    1 <= Cardinality t
-  ) =>
+  (Num r, Ord t, Ord p) =>
+  (Map p Int, Map t Int) ->
   AdjacencyMap (FiniteCount Natural) (PetriNode p t) ->
   TransitionMatrices r
-toTransitionMatrices pn = execState go (TransitionMatrices zeros zeros)
+toTransitionMatrices maps pn = execState go (TransitionMatrices zeros zeros)
   where
-    go = mconcat <$> traverse registerConnection (AM.edgeList pn)
-    zeros = zero ((1 +) $ toFiniteNum @p end) ((1 +) $ toFiniteNum @t end)
+    go = mconcat <$> traverse (registerConnection maps) (AM.edgeList pn)
+    ts = getTransitions pn
+    ns = getPlaces pn
+    zeros = zero (length ns) (length ts)
 
 -- | Converts 0 indexed values to 1 indexed values and then calles unsafeGet
 unsafeGetZeroIndexed :: Int -> Int -> Matrix a -> a
@@ -211,14 +229,12 @@ unsafeGetZeroIndexed a b = unsafeGet (a + 1) (b + 1)
 -- This implmentation is not optimized for performance though it uses @Vector@ under the hood.  We care
 -- more about portability at the momement and so use a pure Haskell implementation over using
 -- BLAS in `HMatrix`, `hasktorch`, or massiv.
+-- TODO: lots of little efficienciey improvements in the function construction.  We needlessly switch between the index representation and the Sum type representation in places
 toVectorField ::
   forall r p t.
   ( Floating r,
-    Finitary p,
-    Finitary t,
-    1 <= Cardinality p,
-    1 <= Cardinality t,
-    Ord p
+    Ord p,
+    Ord t
   ) =>
   AdjacencyMap (FiniteCount Natural) (PetriNode p t) ->
   (t -> r) ->
@@ -227,13 +243,14 @@ toVectorField pn rate' = fun
   where
     fun = du . currentRates
     -- auxiliary helpers
-    (TransitionMatrices input output) = toTransitionMatrices pn
+    (TransitionMatrices input output) = toTransitionMatrices (placeToIdx, transitionToIdx) pn
     dt = output - input
-    forPlaces = for (inhabitants @p)
-    forTransitions = for (inhabitants @t)
-    toIdx f = f . (fromIntegral . toFinite)
-    forTransitionIdx = forTransitions . toIdx
-    nTransitions = (1 +) . fromIntegral $ toFinite @t end
+    allPlaces = getPlaces pn
+    allTransitions = getTransitions pn
+    forPlaces = for allPlaces
+    (placeToIdx, _) = idxMaps allPlaces
+    (transitionToIdx, idxToTransition) = idxMaps allTransitions
+    nTransitions = length allTransitions
     -- calculate a vecotr of current rate coefficients of each transition given by rate * product of all inputs to that transition
     currentRates u = rateVec
       where
@@ -241,11 +258,11 @@ toVectorField pn rate' = fun
           generate
             nTransitions
             ( \t_i ->
-                let transition = fromFinite @t (fromIntegral t_i)
+                let transition = idxToTransition Map.! t_i
                  in (rate' transition *) . product $
-                      for (inhabitants @p) $
+                      for allPlaces $
                         \place ->
-                          let s_i = fromIntegral $ toFinite place
+                          let s_i = placeToIdx Map.! place
                               valAtS = u Map.! place
                            in valAtS ** unsafeGetZeroIndexed s_i t_i input -- will either valAtS ^ 1 or valAtS ^ 0
             )
@@ -258,8 +275,9 @@ toVectorField pn rate' = fun
             forPlaces
               ( \place -> (place,) $
                   sum $
-                    forTransitionIdx $
-                      \t_i ->
-                        let !s_i = (fromIntegral . toFinite $ place)
+                    for allTransitions $
+                      \transition ->
+                        let !t_i = transitionToIdx Map.! transition
+                            !s_i = placeToIdx Map.! place
                          in (rates Vector.! t_i) * unsafeGetZeroIndexed s_i t_i dt
               )

@@ -1,19 +1,14 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 
 module Petri.Models.Sir where
 
-import Data.Finitary
-  ( Finitary,
-  )
 import Data.Map (Map)
 import qualified Data.Map as Map
 import GHC.Generics (Generic)
 import Petri.Stochastic
   ( PetriNode,
     Stochastic,
-    netEdgeList,
     place,
     runPetriMorphism,
     toPetriMorphism,
@@ -24,7 +19,6 @@ import Petri.Stochastic
 -- | The SIR model
 data SIR = S | I | R
   deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
-  deriving anyclass (Finitary)
 
 s :: PetriNode SIR t
 s = place S
@@ -37,7 +31,6 @@ r = place R
 
 data R = R_1 | R_2
   deriving stock (Eq, Ord, Show, Enum, Bounded, Generic)
-  deriving anyclass (Finitary)
 
 r_1 :: PetriNode p R
 r_1 = transition R_1
